@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.formatTenge
 import kz.smartcarshare.app.ui.components.*
@@ -31,6 +32,7 @@ fun InspectionAfterScreen(
 ) {
     var scanState by remember { mutableStateOf(AfterScan.IDLE) }
     var rating by remember { mutableStateOf(5) }
+    val lang = vm.currentLang
 
     LaunchedEffect(scanState) {
         if (scanState == AfterScan.ANALYZING) {
@@ -41,7 +43,7 @@ fun InspectionAfterScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
-            "ЖИ-тексеру · қорытынды",
+            if (lang == Lang.KZ) "ЖИ-тексеру · қорытынды" else "AI-проверка · итоги",
             style = MaterialTheme.typography.titleLarge,
             color = TextHi,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
@@ -55,7 +57,7 @@ fun InspectionAfterScreen(
         ) {
             item {
                 Text(
-                    "Тапсыру алдында соңғы суретке түсіріңіз — жүйе оны бастапқы фотомен автоматты салыстырады.",
+                    text = if (lang == Lang.KZ) "Тапсыру алдында соңғы суретке түсіріңіз — жүйе оны бастапқы фотомен автоматты салыстырады." else "Сделайте финальное фото перед сдачей — система автоматически сравнит его с начальным.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMid,
                     modifier = Modifier.padding(bottom = 14.dp)
@@ -75,17 +77,17 @@ fun InspectionAfterScreen(
                         AfterScan.IDLE -> {
                             Icon(Icons.Filled.CameraAlt, contentDescription = null, tint = TextMid)
                             Spacer(Modifier.height(8.dp))
-                            Text("Соңғы суретке түсіру", style = MaterialTheme.typography.labelLarge, color = TextHi)
+                            Text(if (lang == Lang.KZ) "Соңғы суретке түсіру" else "Сделать финальное фото", style = MaterialTheme.typography.labelLarge, color = TextHi)
                         }
                         AfterScan.ANALYZING -> {
                             CircularProgressIndicator(color = Ice)
                             Spacer(Modifier.height(10.dp))
-                            Text("Салыстыру жүргізілуде...", style = MaterialTheme.typography.labelLarge, color = Ice)
+                            Text(if (lang == Lang.KZ) "Салыстыру жүргізілуде..." else "Выполняется сравнение...", style = MaterialTheme.typography.labelLarge, color = Ice)
                         }
                         AfterScan.DONE -> {
                             Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Success)
                             Spacer(Modifier.height(8.dp))
-                            Text("Сурет сәтті тіркелді", style = MaterialTheme.typography.labelLarge, color = TextHi)
+                            Text(if (lang == Lang.KZ) "Сурет сәтті тіркелді" else "Фото успешно зарегистрировано", style = MaterialTheme.typography.labelLarge, color = TextHi)
                         }
                     }
                 }
@@ -101,7 +103,7 @@ fun InspectionAfterScreen(
                     ) {
                         Icon(Icons.Filled.CameraAlt, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Суретке түсіру", color = TextHi)
+                        Text(if (lang == Lang.KZ) "Суретке түсіру" else "Сделать фото", color = TextHi)
                     }
                 }
             }
@@ -114,8 +116,8 @@ fun InspectionAfterScreen(
                                 .padding(top = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            PhotoPlaceholder("Дейін", Modifier.weight(1f))
-                            PhotoPlaceholder("Кейін", Modifier.weight(1f))
+                            PhotoPlaceholder(if (lang == Lang.KZ) "Дейін" else "До", Modifier.weight(1f))
+                            PhotoPlaceholder(if (lang == Lang.KZ) "Кейін" else "После", Modifier.weight(1f))
                         }
                         Column(
                             modifier = Modifier
@@ -125,8 +127,8 @@ fun InspectionAfterScreen(
                                 .border(1.dp, BorderColor, RoundedCornerShape(18.dp))
                                 .padding(16.dp)
                         ) {
-                            AfterCheckRow("Жаңа зақым анықталмады")
-                            AfterCheckRow("Салон жағдайы өзгеріссіз")
+                            AfterCheckRow(if (lang == Lang.KZ) "Жаңа зақым анықталмады" else "Новых повреждений не обнаружено")
+                            AfterCheckRow(if (lang == Lang.KZ) "Салон жағдайы өзгеріссіз" else "Состояние салона без изменений")
                         }
                         Column(
                             modifier = Modifier
@@ -136,14 +138,14 @@ fun InspectionAfterScreen(
                                 .border(1.dp, BorderColor, RoundedCornerShape(18.dp))
                                 .padding(16.dp)
                         ) {
-                            Text("ТҮПКІЛІКТІ ЕСЕП", style = MaterialTheme.typography.bodySmall, color = Amber)
+                            Text(if (lang == Lang.KZ) "ТҮПКІЛІКТІ ЕСЕП" else "ИТОГОВЫЙ РАСЧЕТ", style = MaterialTheme.typography.bodySmall, color = Amber)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Жалпы уақыт", style = MaterialTheme.typography.bodyMedium, color = TextMid)
+                                Text(if (lang == Lang.KZ) "Жалпы уақыт" else "Общее время", style = MaterialTheme.typography.bodyMedium, color = TextMid)
                                 Text(vm.elapsedFormatted(), style = MaterialTheme.typography.labelLarge, color = TextHi)
                             }
                             Row(
@@ -152,7 +154,7 @@ fun InspectionAfterScreen(
                                     .padding(top = 6.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Сомма (автоплатеж)", style = MaterialTheme.typography.bodyMedium, color = TextMid)
+                                Text(if (lang == Lang.KZ) "Сомасы (автоплатеж)" else "Сумма (автоплатеж)", style = MaterialTheme.typography.bodyMedium, color = TextMid)
                                 Text(
                                     formatTenge(vm.liveAccruedPrice()),
                                     style = MaterialTheme.typography.titleMedium,
@@ -161,7 +163,7 @@ fun InspectionAfterScreen(
                             }
                         }
                         Text(
-                            "САПАРДЫ БАҒАЛАҢЫЗ",
+                            if (lang == Lang.KZ) "САПАРДЫ БАҒАЛАҢЫЗ" else "ОЦЕНИТЕ ПОЕЗДКУ",
                             style = MaterialTheme.typography.bodySmall,
                             color = Amber,
                             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
@@ -199,7 +201,7 @@ fun InspectionAfterScreen(
                 .padding(20.dp)
         ) {
             PrimaryButton(
-                text = "Бас бетке оралу",
+                text = if (lang == Lang.KZ) "Бас бетке оралу" else "Вернуться на главную",
                 enabled = scanState == AfterScan.DONE,
                 onClick = onDone
             )

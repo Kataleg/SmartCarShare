@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "52784153137",
+    "project_id": "smartcarshare",
+    "storage_bucket": "smartcarshare.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52784153137:android:77fb98ccbfd9d2794e4b10",
+        "android_client_info": {
+          "package_name": "kz.smartcarshare.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYbWxikNIILNxxZD-yvXeViiFwaIxeSGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

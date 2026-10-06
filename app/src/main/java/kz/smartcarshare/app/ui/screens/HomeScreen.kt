@@ -17,8 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import kz.smartcarshare.app.data.Car
+import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.formatTenge
 import kz.smartcarshare.app.data.model.LocalUser
@@ -29,13 +32,14 @@ import kz.smartcarshare.app.ui.theme.*
 fun HomeScreen(
     vm: RentalViewModel,
     currentUser: LocalUser? = null,
+    lang: Lang = Lang.KZ,
     onCarClick: (Int) -> Unit,
     onB2BClick: () -> Unit
 ) {
     val greetingText = if (!currentUser?.name.isNullOrBlank()) {
-        "Сәлем, ${currentUser.name}"
+        if (lang == Lang.KZ) "Сәлем, ${currentUser.name}" else "Привет, ${currentUser.name}"
     } else {
-        "Сәлем!"
+        if (lang == Lang.KZ) "Сәлем!" else "Привет!"
     }
 
     LazyColumn(
@@ -56,7 +60,7 @@ fun HomeScreen(
                 Column {
                     Text(greetingText, style = MaterialTheme.typography.bodySmall, color = TextMid)
                     Text(
-                        "Қандай көлік іздеп жүрсіз?",
+                        Strings.get(lang, "home_greeting"),
                         style = MaterialTheme.typography.titleLarge,
                         color = TextHi,
                         modifier = Modifier.padding(top = 4.dp)
@@ -65,10 +69,10 @@ fun HomeScreen(
             }
         }
         item {
-            SectionTitle(title = "Жақын маңдағы көліктер", trailing = "${vm.cars.size} қолжетімді")
+            SectionTitle(title = Strings.get(lang, "nearby_cars"), trailing = "${vm.cars.size} ${Strings.get(lang, "available")}")
         }
         items(vm.cars) { car ->
-            CarRow(car = car, onClick = { onCarClick(car.id) })
+            CarRow(car = car, lang = lang, onClick = { onCarClick(car.id) })
         }
         item {
             Row(
@@ -84,8 +88,8 @@ fun HomeScreen(
             ) {
                 IconBadge(Icons.Filled.Apartment, bg = Ice.copy(alpha = 0.16f), tint = Ice, sizeDp = 38)
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Компанияңызға абонемент керек пе?", style = MaterialTheme.typography.labelLarge, color = TextHi)
-                    Text("Қызметкерлерге арналған айлық тариф", style = MaterialTheme.typography.bodySmall, color = TextMid)
+                    Text(Strings.get(lang, "b2b_prompt"), style = MaterialTheme.typography.labelLarge, color = TextHi)
+                    Text(Strings.get(lang, "b2b_sub"), style = MaterialTheme.typography.bodySmall, color = TextMid)
                 }
                 Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, tint = TextMid)
             }
@@ -94,7 +98,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun CarRow(car: Car, onClick: () -> Unit) {
+private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -106,13 +110,31 @@ private fun CarRow(car: Car, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        IconBadge(
-            icon = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,
-            bg = Ice,
-            tint = AmberOnDark
-        )
+        if (car.imageUrl.isNotBlank()) {
+            Box(
+                modifier = Modifier
+                    .size(width = 76.dp, height = 54.dp)
+                    .background(Surface2, RoundedCornerShape(12.dp))
+                    .border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = car.imageUrl,
+                    contentDescription = car.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        } else {
+            IconBadge(
+                icon = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,
+                bg = Ice,
+                tint = AmberOnDark
+            )
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(car.name, style = MaterialTheme.typography.titleMedium, color = TextHi)
+            Text(car.location, style = MaterialTheme.typography.bodySmall, color = TextLow)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = Modifier.padding(top = 5.dp)
@@ -122,7 +144,7 @@ private fun CarRow(car: Car, onClick: () -> Unit) {
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(formatTenge(car.pricePerHour), color = Ice, style = MaterialTheme.typography.titleMedium)
-            Text("/ сағат", style = MaterialTheme.typography.bodySmall, color = TextMid)
+            Text(if (lang == Lang.KZ) "/ сағат" else "/ час", style = MaterialTheme.typography.bodySmall, color = TextMid)
         }
     }
 }

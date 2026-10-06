@@ -33,6 +33,7 @@ object Routes {
     const val CHAT = "chat"
     const val B2B = "b2b"
     const val PROFILE = "profile"
+    const val TRIPS = "trips"
 
     fun detail(carId: Int) = "detail/$carId"
 }
@@ -46,6 +47,12 @@ fun SmartCarShareApp() {
     val registerViewModel: RegisterViewModel = viewModel()
     val registerState by registerViewModel.uiState.collectAsState()
     val currentUser = registerState.currentUser
+
+    LaunchedEffect(currentUser) {
+        if (!currentUser?.email.isNullOrBlank()) {
+            vm.loadUserData(currentUser.email)
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -71,14 +78,14 @@ fun SmartCarShareApp() {
                         selected = currentRoute == Routes.HOME,
                         onClick = { navController.navigate(Routes.HOME) { launchSingleTop = true } },
                         icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                        label = { Text("Басты") },
+                        label = { Text(Strings.get(vm.currentLang, "nav_home")) },
                         colors = navColors
                     )
                     NavigationBarItem(
                         selected = currentRoute == Routes.CHAT,
                         onClick = { navController.navigate(Routes.CHAT) { launchSingleTop = true } },
                         icon = { Icon(Icons.Filled.Chat, contentDescription = null) },
-                        label = { Text("ЖИ-чат") },
+                        label = { Text(Strings.get(vm.currentLang, "nav_chat")) },
                         colors = navColors
                     )
                     NavigationBarItem(
@@ -87,18 +94,18 @@ fun SmartCarShareApp() {
                             if (vm.rentalActive) {
                                 navController.navigate(Routes.ACTIVE) { launchSingleTop = true }
                             } else {
-                                scope.launch { snackbarHostState.showSnackbar("Қазір белсенді сапар жоқ") }
+                                navController.navigate(Routes.TRIPS) { launchSingleTop = true }
                             }
                         },
                         icon = { Icon(Icons.Filled.DirectionsCar, contentDescription = null) },
-                        label = { Text("Сапарлар") },
+                        label = { Text(Strings.get(vm.currentLang, "nav_trips")) },
                         colors = navColors
                     )
                     NavigationBarItem(
                         selected = currentRoute == Routes.PROFILE,
                         onClick = { navController.navigate(Routes.PROFILE) { launchSingleTop = true } },
                         icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                        label = { Text("Профиль") },
+                        label = { Text(Strings.get(vm.currentLang, "nav_profile")) },
                         colors = navColors
                     )
                 }
@@ -124,6 +131,7 @@ fun SmartCarShareApp() {
                 HomeScreen(
                     vm = vm,
                     currentUser = currentUser,
+                    lang = vm.currentLang,
                     onCarClick = { id ->
                         vm.selectCar(id)
                         navController.navigate(Routes.detail(id))
@@ -152,7 +160,7 @@ fun SmartCarShareApp() {
                 InspectionBeforeScreen(
                     onBack = { navController.popBackStack() },
                     onStartRental = {
-                        vm.startRental()
+                        vm.startRental(currentUser?.email ?: "guest_user")
                         navController.navigate(Routes.ACTIVE) {
                             popUpTo(Routes.HOME)
                         }
@@ -162,7 +170,10 @@ fun SmartCarShareApp() {
             composable(Routes.ACTIVE) {
                 ActiveRentalScreen(
                     vm = vm,
-                    onFinishTrip = { navController.navigate(Routes.INSPECT_AFTER) }
+                    onFinishTrip = {
+                        vm.stopTripAccrual()
+                        navController.navigate(Routes.INSPECT_AFTER)
+                    }
                 )
             }
             composable(Routes.INSPECT_AFTER) {
@@ -183,6 +194,8 @@ fun SmartCarShareApp() {
             composable(Routes.CHAT) {
                 ChatScreen(
                     cars = vm.cars,
+                    currentUser = currentUser,
+                    lang = vm.currentLang,
                     onCarChosen = { id ->
                         vm.selectCar(id)
                         navController.navigate(Routes.detail(id))
@@ -197,11 +210,22 @@ fun SmartCarShareApp() {
                     }
                 )
             }
+            composable(Routes.TRIPS) {
+                MyTripsScreen(
+                    vm = vm,
+                    lang = vm.currentLang,
+                    onBack = { navController.popBackStack() }
+                )
+            }
             composable(Routes.PROFILE) {
                 ProfileScreen(
+                    vm = vm,
                     currentUser = currentUser,
+                    lang = vm.currentLang,
+                    onToggleLang = { vm.toggleLanguage() },
                     onChatClick = { navController.navigate(Routes.CHAT) { launchSingleTop = true } },
                     onB2BClick = { navController.navigate(Routes.B2B) },
+                    onMyTripsClick = { navController.navigate(Routes.TRIPS) },
                     onLogoutClick = {
                         registerViewModel.logout()
                         navController.navigate(Routes.REGISTER) {
@@ -210,6 +234,13 @@ fun SmartCarShareApp() {
                     },
                     onRegisterClick = {
                         navController.navigate(Routes.REGISTER)
+                    },
+                    onSendPasswordReset = { email ->
+                        registerViewModel.onEmailChange(email)
+                        registerViewModel.sendPasswordReset()
+                    },
+                    onUpdateProfile = { firstName, lastName, phone, email ->
+                        registerViewModel.updateProfile(firstName, lastName, phone, email)
                     }
                 )
             }

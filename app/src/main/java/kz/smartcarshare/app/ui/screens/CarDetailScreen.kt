@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -15,7 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.Tariff
 import kz.smartcarshare.app.data.formatTenge
@@ -29,6 +33,7 @@ fun CarDetailScreen(
     onRentClick: () -> Unit
 ) {
     val car = vm.selectedCar ?: return
+    val lang = vm.currentLang
 
     Column(modifier = Modifier.fillMaxSize()) {
         BackTopBar(title = car.name, onBack = onBack)
@@ -43,7 +48,7 @@ fun CarDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
+                        .height(180.dp)
                         .background(
                             Brush.linearGradient(listOf(Surface1, Ice.copy(alpha = 0.18f))),
                             RoundedCornerShape(22.dp)
@@ -51,20 +56,73 @@ fun CarDetailScreen(
                         .border(1.dp, BorderColor, RoundedCornerShape(22.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,
-                        contentDescription = null,
-                        tint = Ice,
-                        modifier = Modifier.size(80.dp)
-                    )
+                    if (car.imageUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = car.imageUrl,
+                            contentDescription = car.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(
+                            imageVector = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,
+                            contentDescription = null,
+                            tint = Ice,
+                            modifier = Modifier.size(80.dp)
+                        )
+                    }
                 }
             }
             item {
                 Row(
-                    modifier = Modifier.padding(top = 14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.Filled.LocationOn, contentDescription = null, tint = Ice, modifier = Modifier.size(16.dp))
+                    Text(car.location, style = MaterialTheme.typography.bodySmall, color = Ice)
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier.padding(top = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     car.tags.forEach { Chip(it, accent = true) }
+                }
+            }
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                        .background(Surface1, RoundedCornerShape(18.dp))
+                        .border(1.dp, BorderColor, RoundedCornerShape(18.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        if (lang == Lang.KZ) "КӨЛІК ПАРКІ ЖӘНЕ БАЙЛАНЫС" else "АВТОПАРК И КОНТАКТЫ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Amber
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = if (car.company == "CashAuto") "CashAuto Астана (24/7)" else car.company,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextHi
+                    )
+                    Text(
+                        text = if (car.company == "CashAuto") {
+                            if (lang == Lang.KZ) "Тел: +7 (777) 999-11-12 | Аэропорт Т1 & Жайдарман 2/1" else "Тел: +7 (777) 999-11-12 | Аэропорт Т1 & Жайдарман 2/1"
+                        } else {
+                            if (lang == Lang.KZ) "Онлайн брондау қолжетімді" else "Онлайн бронирование доступно"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMid,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
                 }
             }
             item {
@@ -74,8 +132,8 @@ fun CarDetailScreen(
                         .padding(top = 14.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    SpecBox("Орын саны", car.seats, Modifier.weight(1f))
-                    SpecBox("Беріліс қорабы", car.transmission, Modifier.weight(1f))
+                    SpecBox(Strings.get(lang, "seats"), car.seats, Modifier.weight(1f))
+                    SpecBox(Strings.get(lang, "transmission"), car.transmission, Modifier.weight(1f))
                 }
                 Row(
                     modifier = Modifier
@@ -83,24 +141,24 @@ fun CarDetailScreen(
                         .padding(top = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    SpecBox("Отын түрі", car.fuel, Modifier.weight(1f))
-                    SpecBox("Санат", if (car.isLux) "Lux" else "Стандарт", Modifier.weight(1f))
+                    SpecBox(Strings.get(lang, "fuel"), car.fuel, Modifier.weight(1f))
+                    SpecBox(Strings.get(lang, "category"), if (car.isLux) "Lux" else "Standard", Modifier.weight(1f))
                 }
             }
-            item { SectionTitle(title = "Жалдау форматы") }
+            item { SectionTitle(title = Strings.get(lang, "rental_format")) }
             item {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     TariffOption(
-                        label = "Сағаттық",
+                        label = Strings.get(lang, "hourly"),
                         value = formatTenge(car.pricePerHour),
                         selected = vm.tariff == Tariff.HOUR,
                         modifier = Modifier.weight(1f)
                     ) { vm.changeTariff(Tariff.HOUR) }
                     TariffOption(
-                        label = "Тәуліктік",
+                        label = Strings.get(lang, "daily"),
                         value = car.pricePerDay?.let { formatTenge(it) } ?: "—",
                         selected = vm.tariff == Tariff.DAY,
                         enabled = car.pricePerDay != null,
@@ -124,7 +182,7 @@ fun CarDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(9.dp)
                     ) {
                         Icon(Icons.Filled.Shield, contentDescription = null, tint = Ice, modifier = Modifier.size(18.dp))
-                        Text("Сақтандыру қосу", style = MaterialTheme.typography.labelLarge, color = TextHi)
+                        Text(Strings.get(lang, "add_insurance"), style = MaterialTheme.typography.labelLarge, color = TextHi)
                     }
                     Switch(
                         checked = vm.insuranceOn,
@@ -144,9 +202,9 @@ fun CarDetailScreen(
                 .background(Navy800)
                 .padding(20.dp)
         ) {
-            val unit = if (vm.tariff == Tariff.HOUR) "/сағ" else "/тәулік"
+            val unit = if (vm.tariff == Tariff.HOUR) (if (lang == Lang.KZ) "/сағ" else "/час") else (if (lang == Lang.KZ) "/тәулік" else "/сутки")
             PrimaryButton(
-                text = "Жалдау — ${formatTenge(vm.currentPrice())} $unit",
+                text = "${Strings.get(lang, "rent")} — ${formatTenge(vm.currentPrice())} $unit",
                 onClick = onRentClick
             )
         }

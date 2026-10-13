@@ -1,5 +1,8 @@
 package kz.smartcarshare.app.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +18,7 @@ import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.PersonAdd
@@ -22,10 +26,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.model.LocalUser
@@ -43,7 +50,7 @@ fun ProfileScreen(
     onLogoutClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onSendPasswordReset: (email: String) -> Unit = {},
-    onUpdateProfile: (firstName: String, lastName: String, phone: String, email: String) -> Unit = { _, _, _, _ -> }
+    onUpdateProfile: (firstName: String, lastName: String, phone: String, email: String, avatarUrl: String) -> Unit = { _, _, _, _, _ -> }
 ) {
     val initial = currentUser?.name?.trim()?.firstOrNull()?.uppercaseChar()?.toString() ?: "П"
     val displayName = currentUser?.name?.takeIf { it.isNotBlank() } ?: (if (lang == Lang.KZ) "Пайдаланушы" else "Пользователь")
@@ -63,6 +70,15 @@ fun ProfileScreen(
     }
     var editPhone by remember(currentUser) { mutableStateOf(currentUser?.phone ?: "") }
     var editEmail by remember(currentUser) { mutableStateOf(currentUser?.email ?: "") }
+    var editAvatarUrl by remember(currentUser) { mutableStateOf(currentUser?.avatarUrl ?: "") }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            editAvatarUrl = uri.toString()
+        }
+    }
 
     var newCarName by remember { mutableStateOf("") }
     var newCarPriceHour by remember { mutableStateOf("1200") }
@@ -94,10 +110,21 @@ fun ProfileScreen(
                 Box(
                     modifier = Modifier
                         .size(56.dp)
-                        .background(Ice, CircleShape),
+                        .clip(CircleShape)
+                        .background(Ice, CircleShape)
+                        .clickable { if (currentUser != null) isEditDialogVisible = true },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(initial, color = Navy900, style = MaterialTheme.typography.headlineSmall)
+                    if (!currentUser?.avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = currentUser.avatarUrl,
+                            contentDescription = "Аватар",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Text(initial, color = Navy900, style = MaterialTheme.typography.headlineSmall)
+                    }
                 }
                 Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                     Text(displayName, style = MaterialTheme.typography.titleLarge, color = TextHi)
@@ -133,7 +160,7 @@ fun ProfileScreen(
                     MenuRow(
                         icon = Icons.Filled.Edit,
                         title = Strings.get(lang, "profile_edit"),
-                        sub = if (lang == Lang.KZ) "Аты, тегі, номер, почта" else "Имя, фамилия, телефон, почта",
+                        sub = if (lang == Lang.KZ) "Аты, тегі, суреті, номер, почта" else "Имя, фамилия, фото, телефон, почта",
                         onClick = { isEditDialogVisible = true }
                     )
                 }
@@ -328,6 +355,26 @@ fun ProfileScreen(
                             singleLine = true
                         )
                     }
+
+                    OutlinedButton(
+                        onClick = { galleryLauncher.launch("image/*") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ice)
+                    ) {
+                        Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (lang == Lang.KZ) "Галереядан сурет таңдау" else "Выбрать фото из галереи")
+                    }
+
+                    if (editAvatarUrl.isNotBlank()) {
+                        Text(
+                            text = if (lang == Lang.KZ) "Таңдалған сурет жолы орнатылды" else "Фото успешно выбрано",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Success
+                        )
+                    }
+
                     OutlinedTextField(
                         value = editPhone,
                         onValueChange = { editPhone = it },
@@ -384,7 +431,8 @@ fun ProfileScreen(
                             editFirstName.trim(),
                             editLastName.trim(),
                             editPhone.trim(),
-                            editEmail.trim()
+                            editEmail.trim(),
+                            editAvatarUrl.trim()
                         )
                         isEditDialogVisible = false
                     },

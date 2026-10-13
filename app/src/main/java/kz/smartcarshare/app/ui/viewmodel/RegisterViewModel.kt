@@ -105,7 +105,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
-    fun updateProfile(firstName: String, lastName: String, phone: String, email: String) {
+    fun updateProfile(firstName: String, lastName: String, phone: String, email: String, avatarUrl: String = "") {
         _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
         val fullName = "$firstName $lastName".trim()
         val lang = _uiState.value.lang
@@ -114,7 +114,8 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
             val result = repository.updateUserProfile(
                 name = fullName,
                 phone = phone,
-                email = email
+                email = email,
+                avatarUrl = avatarUrl
             )
             result.onSuccess { updatedUser ->
                 _uiState.value = _uiState.value.copy(

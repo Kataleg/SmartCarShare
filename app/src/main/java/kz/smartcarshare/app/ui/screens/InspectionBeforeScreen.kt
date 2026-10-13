@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.ui.components.*
 import kz.smartcarshare.app.ui.theme.*
 
@@ -21,6 +22,7 @@ private enum class BeforeScan { IDLE, ANALYZING, DONE }
 
 @Composable
 fun InspectionBeforeScreen(
+    lang: Lang = Lang.KZ,
     onBack: () -> Unit,
     onStartRental: () -> Unit
 ) {
@@ -34,7 +36,10 @@ fun InspectionBeforeScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        BackTopBar(title = "ЖИ-тексеру · алдын ала", onBack = onBack)
+        BackTopBar(
+            title = if (lang == Lang.KZ) "ЖИ-тексеру · алдын ала" else "ИИ-проверка · осмотр",
+            onBack = onBack
+        )
 
         LazyColumn(
             modifier = Modifier
@@ -44,7 +49,10 @@ fun InspectionBeforeScreen(
         ) {
             item {
                 Text(
-                    "Көлікті алар алдында суретке түсіріңіз — жасанды интеллект кузов пен салонның жағдайын автоматты тіркейді.",
+                    text = if (lang == Lang.KZ)
+                        "Көлікті алар алдында суретке түсіріңіз — жасанды интеллект кузов пен салонның жағдайын автоматты тіркейді."
+                    else
+                        "Сделайте фото автомобиля перед поездкой — искусственный интеллект автоматически зафиксирует состояние кузова и салона.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMid,
                     modifier = Modifier.padding(bottom = 14.dp)
@@ -64,18 +72,34 @@ fun InspectionBeforeScreen(
                         BeforeScan.IDLE -> {
                             Icon(Icons.Filled.CameraAlt, contentDescription = null, tint = TextMid)
                             Spacer(Modifier.height(8.dp))
-                            Text("Камераға түсіру", style = MaterialTheme.typography.labelLarge, color = TextHi)
-                            Text("Машинаны 4 жағынан суретке түсіріңіз", style = MaterialTheme.typography.bodySmall, color = TextLow)
+                            Text(
+                                if (lang == Lang.KZ) "Камераға түсіру" else "Сделать фото",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = TextHi
+                            )
+                            Text(
+                                if (lang == Lang.KZ) "Машинаны 4 жағынан суретке түсіріңіз" else "Сфотографируйте авто с 4 сторон",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextLow
+                            )
                         }
                         BeforeScan.ANALYZING -> {
                             CircularProgressIndicator(color = Ice)
                             Spacer(Modifier.height(10.dp))
-                            Text("ЖИ талдап жатыр...", style = MaterialTheme.typography.labelLarge, color = Ice)
+                            Text(
+                                if (lang == Lang.KZ) "ЖИ талдап жатыр..." else "ИИ анализирует...",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = Ice
+                            )
                         }
                         BeforeScan.DONE -> {
                             Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Success)
                             Spacer(Modifier.height(8.dp))
-                            Text("Сурет сәтті тіркелді", style = MaterialTheme.typography.labelLarge, color = TextHi)
+                            Text(
+                                if (lang == Lang.KZ) "Сурет сәтті тіркелді" else "Фото успешно зарегистрировано",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = TextHi
+                            )
                         }
                     }
                 }
@@ -91,7 +115,7 @@ fun InspectionBeforeScreen(
                     ) {
                         Icon(Icons.Filled.CameraAlt, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Суретке түсіру", color = TextHi)
+                        Text(if (lang == Lang.KZ) "Суретке түсіру" else "Сделать фото", color = TextHi)
                     }
                 }
             }
@@ -105,11 +129,15 @@ fun InspectionBeforeScreen(
                             .border(1.dp, BorderColor, RoundedCornerShape(18.dp))
                             .padding(16.dp)
                     ) {
-                        Text("ЖИ ҚОРЫТЫНДЫСЫ", style = MaterialTheme.typography.bodySmall, color = Amber)
-                        BeforeCheckRow("Кузовта зақым табылмады")
-                        BeforeCheckRow("Дөңгелектер қалыпты күйде")
-                        BeforeCheckRow("Салон таза, зақым жоқ")
-                        BeforeCheckRow("Жанармай деңгейі: 78%")
+                        Text(
+                            if (lang == Lang.KZ) "ЖИ ҚОРЫТЫНДЫСЫ" else "ЗАКЛЮЧЕНИЕ ИИ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Amber
+                        )
+                        BeforeCheckRow(if (lang == Lang.KZ) "Кузовта зақым табылмады" else "Повреждений кузова не обнаружено")
+                        BeforeCheckRow(if (lang == Lang.KZ) "Дөңгелектер қалыпты күйде" else "Шины и колеса в норме")
+                        BeforeCheckRow(if (lang == Lang.KZ) "Салон таза, зақым жоқ" else "Салон чистый, без повреждений")
+                        BeforeCheckRow(if (lang == Lang.KZ) "Жанармай деңгейі: 78%" else "Уровень топлива: 78%")
                     }
                 }
             }
@@ -122,7 +150,7 @@ fun InspectionBeforeScreen(
                 .padding(20.dp)
         ) {
             PrimaryButton(
-                text = "Жалдауды бастау",
+                text = if (lang == Lang.KZ) "Жалдауды бастау" else "Начать аренду",
                 enabled = scanState == BeforeScan.DONE,
                 onClick = onStartRental
             )

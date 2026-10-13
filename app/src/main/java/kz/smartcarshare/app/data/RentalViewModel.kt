@@ -15,6 +15,7 @@ import kz.smartcarshare.app.data.model.FirestoreRental
 import kz.smartcarshare.app.data.repository.FirestoreRentalRepository
 
 enum class Tariff { HOUR, DAY }
+enum class SortOrder { NONE, PRICE_ASC, PRICE_DESC }
 
 class RentalViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -27,6 +28,127 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
 
     var currentLang by mutableStateOf(Lang.KZ)
         private set
+
+    var searchQuery by mutableStateOf("")
+    var selectedCategory by mutableStateOf("Барлығы")
+    var selectedSeatsFilter by mutableStateOf("Барлығы")
+    var selectedBrand by mutableStateOf("Барлығы")
+    var selectedBodyType by mutableStateOf("Барлығы")
+    var selectedClass by mutableStateOf("Барлығы")
+    var sortOrder by mutableStateOf(SortOrder.NONE)
+    var isFilterDialogVisible by mutableStateOf(false)
+
+    val allLabel: String
+        get() = if (currentLang == Lang.KZ) "Барлығы" else "Все"
+
+    val categories: List<String>
+        get() = listOf(allLabel, "CashAuto", "Мото", "Эконом", "Кроссовер", "Бизнес", "Минивэн", "Lux")
+
+    private fun matchesCat(car: Car, cat: String): Boolean = when (cat) {
+        "CashAuto" -> car.company.contains("CashAuto", ignoreCase = true)
+        "Мото" -> car.tags.contains("Мото")
+        "Эконом" -> car.tags.contains("Эконом")
+        "Кроссовер" -> car.tags.contains("Кроссовер")
+        "Бизнес" -> car.tags.contains("Бизнес") || car.tags.contains("Седан")
+        "Минивэн" -> car.tags.contains("Минивэн")
+        "Lux" -> car.isLux || car.tags.contains("Lux")
+        else -> true
+    }
+
+    private fun matchesBr(car: Car, brand: String): Boolean =
+        car.name.startsWith(brand, ignoreCase = true) || car.name.contains(brand, ignoreCase = true)
+
+    private fun matchesBody(car: Car, body: String): Boolean =
+        car.tags.any { it.contains(body, ignoreCase = true) } || car.name.contains(body, ignoreCase = true)
+
+    private fun matchesCls(car: Car, cls: String): Boolean =
+        if (cls == "Lux") car.isLux || car.tags.contains("Lux") else car.tags.any { it.contains(cls, ignoreCase = true) }
+
+    private fun matchesSeat(car: Car, seat: String): Boolean = when (seat) {
+        "2 орын", "2 места" -> car.seats.contains("2")
+        "4–5 орын", "4-5 мест", "4–5 мест" -> car.seats.contains("4") || car.seats.contains("5")
+        "7+ орын", "7+ мест" -> car.seats.contains("6") || car.seats.contains("7") || car.seats.contains("8") || car.seats.contains("11")
+        else -> true
+    }
+
+    val brands: List<String>
+        get() {
+            val matching = cars.filter { car ->
+                val matchesCategory = selectedCategory == "Барлығы" || selectedCategory == "Все" || matchesCat(car, selectedCategory)
+                val matchesBodyType = selectedBodyType == "Барлығы" || selectedBodyType == "Все" || matchesBody(car, selectedBodyType)
+                val matchesClass = selectedClass == "Барлығы" || selectedClass == "Все" || matchesCls(car, selectedClass)
+                val matchesSeats = selectedSeatsFilter == "Барлығы" || selectedSeatsFilter == "Все" || matchesSeat(car, selectedSeatsFilter)
+                matchesCategory && matchesBodyType && matchesClass && matchesSeats
+            }
+            val extracted = matching.map { it.name.trim().substringBefore(" ") }.distinct().filter { it.isNotBlank() }.sorted()
+            return listOf(allLabel) + extracted
+        }
+
+    val bodyTypes: List<String>
+        get() {
+            val matching = cars.filter { car ->
+                val matchesCategory = selectedCategory == "Барлығы" || selectedCategory == "Все" || matchesCat(car, selectedCategory)
+                val matchesBrand = selectedBrand == "Барлығы" || selectedBrand == "Все" || matchesBr(car, selectedBrand)
+                val matchesClass = selectedClass == "Барлығы" || selectedClass == "Все" || matchesCls(car, selectedClass)
+                val matchesSeats = selectedSeatsFilter == "Барлығы" || selectedSeatsFilter == "Все" || matchesSeat(car, selectedSeatsFilter)
+                matchesCategory && matchesBrand && matchesClass && matchesSeats
+            }
+            val allTypes = listOf("Седан", "Хэтчбек", "Кроссовер", "Внедорожник", "Кабриолет", "Пикап", "Минивэн", "Мото")
+            val available = allTypes.filter { type ->
+                matching.any { car -> matchesBody(car, type) }
+            }
+            return listOf(allLabel) + available
+        }
+
+    val vehicleClasses: List<String>
+        get() {
+            val matching = cars.filter { car ->
+                val matchesCategory = selectedCategory == "Барлығы" || selectedCategory == "Все" || matchesCat(car, selectedCategory)
+                val matchesBrand = selectedBrand == "Барлығы" || selectedBrand == "Все" || matchesBr(car, selectedBrand)
+                val matchesBodyType = selectedBodyType == "Барлығы" || selectedBodyType == "Все" || matchesBody(car, selectedBodyType)
+                val matchesSeats = selectedSeatsFilter == "Барлығы" || selectedSeatsFilter == "Все" || matchesSeat(car, selectedSeatsFilter)
+                matchesCategory && matchesBrand && matchesBodyType && matchesSeats
+            }
+            val allClasses = listOf("Эконом", "Комфорт", "Комфорт+", "Бизнес", "Lux")
+            val available = allClasses.filter { cls ->
+                matching.any { car -> matchesCls(car, cls) }
+            }
+            return listOf(allLabel) + available
+        }
+
+    val filteredCars: List<Car>
+        get() {
+            val list = cars.filter { car ->
+                val matchesSearch = searchQuery.isBlank() ||
+                    car.name.contains(searchQuery, ignoreCase = true) ||
+                    car.company.contains(searchQuery, ignoreCase = true) ||
+                    car.tags.any { it.contains(searchQuery, ignoreCase = true) }
+
+                val matchesCategory = selectedCategory == "Барлығы" || selectedCategory == "Все" || matchesCat(car, selectedCategory)
+                val matchesSeats = selectedSeatsFilter == "Барлығы" || selectedSeatsFilter == "Все" || matchesSeat(car, selectedSeatsFilter)
+                val matchesBrand = selectedBrand == "Барлығы" || selectedBrand == "Все" || matchesBr(car, selectedBrand)
+                val matchesBodyType = selectedBodyType == "Барлығы" || selectedBodyType == "Все" || matchesBody(car, selectedBodyType)
+                val matchesClass = selectedClass == "Барлығы" || selectedClass == "Все" || matchesCls(car, selectedClass)
+
+                matchesSearch && matchesCategory && matchesSeats && matchesBrand && matchesBodyType && matchesClass
+            }
+
+            return when (sortOrder) {
+                SortOrder.PRICE_ASC -> list.sortedBy { it.pricePerHour }
+                SortOrder.PRICE_DESC -> list.sortedByDescending { it.pricePerHour }
+                SortOrder.NONE -> list
+            }
+        }
+
+    fun resetFilters() {
+        searchQuery = ""
+        selectedCategory = allLabel
+        selectedSeatsFilter = allLabel
+        selectedBrand = allLabel
+        selectedBodyType = allLabel
+        selectedClass = allLabel
+        sortOrder = SortOrder.NONE
+    }
 
     private val localTripHistory = mutableStateListOf<FirestoreRental>()
     private var firestoreTripHistory by mutableStateOf<List<FirestoreRental>>(emptyList())
@@ -91,7 +213,6 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         private set
     var tariff by mutableStateOf(Tariff.HOUR)
         private set
-    var insuranceOn by mutableStateOf(false)
     var elapsedSeconds by mutableStateOf(0)
         private set
     var rentalActive by mutableStateOf(false)
@@ -108,17 +229,23 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         get() = cars.firstOrNull { it.id == selectedCarId }
 
     fun setLanguage(lang: Lang) {
+        val oldAll = allLabel
         currentLang = lang
+        val newAll = allLabel
+        if (selectedCategory == oldAll) selectedCategory = newAll
+        if (selectedSeatsFilter == oldAll) selectedSeatsFilter = newAll
+        if (selectedBrand == oldAll) selectedBrand = newAll
+        if (selectedBodyType == oldAll) selectedBodyType = newAll
+        if (selectedClass == oldAll) selectedClass = newAll
     }
 
     fun toggleLanguage() {
-        currentLang = if (currentLang == Lang.KZ) Lang.RU else Lang.KZ
+        setLanguage(if (currentLang == Lang.KZ) Lang.RU else Lang.KZ)
     }
 
     fun selectCar(id: Int) {
         selectedCarId = id
         tariff = Tariff.HOUR
-        insuranceOn = false
     }
 
     fun changeTariff(t: Tariff) {

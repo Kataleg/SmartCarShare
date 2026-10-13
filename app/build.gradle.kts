@@ -63,4 +63,5 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 }

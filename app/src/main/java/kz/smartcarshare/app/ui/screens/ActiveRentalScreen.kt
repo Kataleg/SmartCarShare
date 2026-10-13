@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.Tariff
 import kz.smartcarshare.app.data.formatTenge
@@ -22,6 +23,7 @@ fun ActiveRentalScreen(
     onFinishTrip: () -> Unit
 ) {
     val car = vm.selectedCar
+    val lang = vm.currentLang
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -31,12 +33,12 @@ fun ActiveRentalScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Сапар барысында",
+                if (lang == Lang.KZ) "Сапар барысында" else "В процессе поездки",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextHi,
                 modifier = Modifier.weight(1f)
             )
-            Chip("Белсенді", accent = true)
+            Chip(if (lang == Lang.KZ) "Белсенді" else "Активно", accent = true)
         }
 
         Column(
@@ -56,7 +58,7 @@ fun ActiveRentalScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(vm.elapsedFormatted(), style = MaterialTheme.typography.headlineSmall, color = TextHi)
-                    Text("жүру уақыты", style = MaterialTheme.typography.bodySmall, color = TextMid)
+                    Text(if (lang == Lang.KZ) "жүру уақыты" else "время поездки", style = MaterialTheme.typography.bodySmall, color = TextMid)
                 }
             }
 
@@ -70,7 +72,7 @@ fun ActiveRentalScreen(
                     color = Ice
                 )
                 Text(
-                    "автоплатеж арқылы есептелуде",
+                    if (lang == Lang.KZ) "сапар сомасы" else "стоимость поездки",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextMid
                 )
@@ -88,7 +90,7 @@ fun ActiveRentalScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Көлік", style = MaterialTheme.typography.bodyMedium, color = TextMid)
+                        Text(if (lang == Lang.KZ) "Көлік" else "Авто", style = MaterialTheme.typography.bodyMedium, color = TextMid)
                         Text(car.name, style = MaterialTheme.typography.labelLarge, color = TextHi)
                     }
                     Row(
@@ -97,9 +99,9 @@ fun ActiveRentalScreen(
                             .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Тариф", style = MaterialTheme.typography.bodyMedium, color = TextMid)
+                        Text(if (lang == Lang.KZ) "Тариф" else "Тариф", style = MaterialTheme.typography.bodyMedium, color = TextMid)
                         Text(
-                            if (vm.tariff == Tariff.HOUR) "Сағаттық" else "Тәуліктік",
+                            if (vm.tariff == Tariff.HOUR) (if (lang == Lang.KZ) "Сағаттық" else "Почасовой") else (if (lang == Lang.KZ) "Тәуліктік" else "Суточный"),
                             style = MaterialTheme.typography.labelLarge,
                             color = TextHi
                         )
@@ -114,7 +116,10 @@ fun ActiveRentalScreen(
                 .background(Navy800)
                 .padding(20.dp)
         ) {
-            OutlineActionButton(text = "Сапарды аяқтау", onClick = onFinishTrip)
+            OutlineActionButton(
+                text = if (lang == Lang.KZ) "Сапарды аяқтау" else "Завершить поездку",
+                onClick = onFinishTrip
+            )
         }
     }
 }

@@ -17,6 +17,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import kotlinx.coroutines.launch
+import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.ui.screens.*
 import kz.smartcarshare.app.ui.theme.*
@@ -52,6 +53,14 @@ fun SmartCarShareApp() {
         if (!currentUser?.email.isNullOrBlank()) {
             vm.loadUserData(currentUser.email)
         }
+    }
+
+    LaunchedEffect(registerState.lang) {
+        vm.setLanguage(registerState.lang)
+    }
+
+    LaunchedEffect(vm.currentLang) {
+        registerViewModel.setLanguage(vm.currentLang)
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -158,6 +167,7 @@ fun SmartCarShareApp() {
             }
             composable(Routes.INSPECT_BEFORE) {
                 InspectionBeforeScreen(
+                    lang = vm.currentLang,
                     onBack = { navController.popBackStack() },
                     onStartRental = {
                         vm.startRental(currentUser?.email ?: "guest_user")
@@ -183,7 +193,7 @@ fun SmartCarShareApp() {
                         val paid = vm.liveAccruedPrice()
                         vm.finishRental()
                         scope.launch {
-                            snackbarHostState.showSnackbar("Автоплатеж арқылы $paid ₸ есептен шығарылды")
+                            snackbarHostState.showSnackbar(if (vm.currentLang == Lang.KZ) "Сапар аяқталды. Сомасы: $paid ₸" else "Поездка завершена. Сумма: $paid ₸")
                         }
                         navController.navigate(Routes.HOME) {
                             popUpTo(Routes.HOME) { inclusive = true }
@@ -204,9 +214,14 @@ fun SmartCarShareApp() {
             }
             composable(Routes.B2B) {
                 B2BScreen(
+                    lang = vm.currentLang,
                     onBack = { navController.popBackStack() },
                     onPlanChosen = { plan ->
-                        scope.launch { snackbarHostState.showSnackbar("Өтінім қабылданды: «$plan» тарифі") }
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                if (vm.currentLang == Lang.KZ) "Өтінім қабылданды: «$plan» тарифі" else "Заявка принята: тариф «$plan»"
+                            )
+                        }
                     }
                 )
             }
@@ -239,8 +254,8 @@ fun SmartCarShareApp() {
                         registerViewModel.onEmailChange(email)
                         registerViewModel.sendPasswordReset()
                     },
-                    onUpdateProfile = { firstName, lastName, phone, email ->
-                        registerViewModel.updateProfile(firstName, lastName, phone, email)
+                    onUpdateProfile = { firstName, lastName, phone, email, avatarUrl ->
+                        registerViewModel.updateProfile(firstName, lastName, phone, email, avatarUrl)
                     }
                 )
             }

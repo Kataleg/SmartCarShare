@@ -154,7 +154,7 @@ fun InspectionAfterScreen(
                                     .padding(top = 6.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(if (lang == Lang.KZ) "Сомасы (автоплатеж)" else "Сумма (автоплатеж)", style = MaterialTheme.typography.bodyMedium, color = TextMid)
+                                Text(if (lang == Lang.KZ) "Жалпы сомасы" else "Итоговая сумма", style = MaterialTheme.typography.bodyMedium, color = TextMid)
                                 Text(
                                     formatTenge(vm.liveAccruedPrice()),
                                     style = MaterialTheme.typography.titleMedium,

@@ -76,20 +76,15 @@ fun Chip(text: String, accent: Boolean = false) {
     Box(
         modifier = Modifier
             .background(
-                color = if (accent) Ice.copy(alpha = 0.12f) else Surface2,
-                shape = RoundedCornerShape(100.dp)
+                color = if (accent) Ice.copy(alpha = 0.15f) else Surface2,
+                shape = RoundedCornerShape(6.dp)
             )
-            .border(
-                1.dp,
-                if (accent) Ice.copy(alpha = 0.3f) else BorderColor,
-                RoundedCornerShape(100.dp)
-            )
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
-            text,
+            text = text,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             color = if (accent) Ice else TextMid
         )
     }

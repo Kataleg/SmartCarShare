@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.ui.components.*
 import kz.smartcarshare.app.ui.theme.*
 
@@ -23,23 +24,41 @@ private data class Plan(
     val recommended: Boolean = false
 )
 
-private val plans = listOf(
-    Plan("Старт", "280 000 ₸ / айына", listOf("3 қызметкерге дейін", "Айына 40 сағат жалдау")),
-    Plan(
-        "Бизнес", "690 000 ₸ / айына",
-        listOf("10 қызметкерге дейін", "Шектеусіз сағаттық жалдау", "Бірыңғай бухгалтерлік есеп"),
-        recommended = true
-    ),
-    Plan("Корпоративтік", "жеке есеп", listOf("10+ қызметкер, жеке флот"))
-)
+private fun getPlans(lang: Lang) = if (lang == Lang.KZ) {
+    listOf(
+        Plan("Старт", "280 000 ₸ / айына", listOf("3 қызметкерге дейін", "Айына 40 сағат жалдау")),
+        Plan(
+            "Бизнес", "690 000 ₸ / айына",
+            listOf("10 қызметкерге дейін", "Шектеусіз сағаттық жалдау", "Бірыңғай бухгалтерлік есеп"),
+            recommended = true
+        ),
+        Plan("Корпоративтік", "жеке есеп", listOf("10+ қызметкер, жеке флот"))
+    )
+} else {
+    listOf(
+        Plan("Старт", "280 000 ₸ / месяц", listOf("До 3 сотрудников", "40 часов аренды в месяц")),
+        Plan(
+            "Бизнес", "690 000 ₸ / месяц",
+            listOf("До 10 сотрудников", "Безлимитная почасовая аренда", "Единый бухгалтерский учет"),
+            recommended = true
+        ),
+        Plan("Корпоративный", "индивидуальный расчет", listOf("10+ сотрудников, свой автопарк"))
+    )
+}
 
 @Composable
 fun B2BScreen(
+    lang: Lang = Lang.KZ,
     onBack: () -> Unit,
     onPlanChosen: (String) -> Unit
 ) {
+    val plans = getPlans(lang)
+
     Column(modifier = Modifier.fillMaxSize()) {
-        BackTopBar(title = "Компанияларға арналған", onBack = onBack)
+        BackTopBar(
+            title = if (lang == Lang.KZ) "Компанияларға арналған" else "Для бизнеса и компаний",
+            onBack = onBack
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -47,21 +66,24 @@ fun B2BScreen(
         ) {
             item {
                 Text(
-                    "Қызметкерлеріңіз үшін айлық абонемент рәсімдеңіз — бекітілген саны бойынша көлікті шектеусіз пайдалану.",
+                    text = if (lang == Lang.KZ)
+                        "Қызметкерлеріңіз үшін айлық абонемент рәсімдеңіз — бекітілген саны бойынша көлікті шектеусіз пайдалану."
+                    else
+                        "Оформите месячный абонемент для сотрудников — безлимитное использование автомобилей для вашего бизнеса.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMid,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
             items(plans) { plan ->
-                PlanCard(plan) { onPlanChosen(plan.name) }
+                PlanCard(plan, lang) { onPlanChosen(plan.name) }
             }
         }
     }
 }
 
 @Composable
-private fun PlanCard(plan: Plan, onChoose: () -> Unit) {
+private fun PlanCard(plan: Plan, lang: Lang, onChoose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -79,7 +101,11 @@ private fun PlanCard(plan: Plan, onChoose: () -> Unit) {
                     .background(Amber, RoundedCornerShape(100.dp))
                     .padding(horizontal = 9.dp, vertical = 3.dp)
             ) {
-                Text("Ұсынылады", style = MaterialTheme.typography.bodySmall, color = AmberOnDark)
+                Text(
+                    if (lang == Lang.KZ) "Ұсынылады" else "Рекомендуется",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AmberOnDark
+                )
             }
         }
         Text(
@@ -105,7 +131,11 @@ private fun PlanCard(plan: Plan, onChoose: () -> Unit) {
             }
         }
         PrimaryButton(
-            text = if (plan.name == "Корпоративтік") "Байланысу" else "Тарифті таңдау",
+            text = if (plan.name == "Корпоративтік" || plan.name == "Корпоративный") {
+                if (lang == Lang.KZ) "Байланысу" else "Связаться"
+            } else {
+                if (lang == Lang.KZ) "Тарифті таңдау" else "Выбрать тариф"
+            },
             modifier = Modifier.padding(top = 12.dp),
             onClick = onChoose
         )

@@ -103,6 +103,7 @@ class AuthRepository(private val context: Context) {
 
             var name = ""
             var phone = ""
+            var avatarUrl = ""
 
             withTimeoutOrNull(2500) {
                 try {
@@ -110,6 +111,7 @@ class AuthRepository(private val context: Context) {
                     if (doc.exists()) {
                         name = doc.getString("name") ?: ""
                         phone = doc.getString("phone") ?: ""
+                        avatarUrl = doc.getString("avatarUrl") ?: ""
                     }
                 } catch (_: Exception) {}
             }
@@ -118,7 +120,8 @@ class AuthRepository(private val context: Context) {
                 email = email,
                 passwordHash = "",
                 name = name.ifBlank { firebaseUser.displayName ?: email.substringBefore("@") },
-                phone = phone
+                phone = phone,
+                avatarUrl = avatarUrl
             )
             localUserStore.save(localUser)
             Result.success(localUser)
@@ -131,7 +134,8 @@ class AuthRepository(private val context: Context) {
     suspend fun updateUserProfile(
         name: String,
         phone: String,
-        email: String
+        email: String,
+        avatarUrl: String = ""
     ): Result<LocalUser> {
         val currentUser = localUserStore.getCurrentUser()
             ?: return Result.failure(Exception("Пайдаланушы авторизацияланбаған"))
@@ -139,6 +143,7 @@ class AuthRepository(private val context: Context) {
         val targetEmail = email.ifBlank { currentUser.email }
         val updatedName = name.ifBlank { currentUser.name }
         val updatedPhone = phone.ifBlank { currentUser.phone }
+        val updatedAvatar = avatarUrl.ifBlank { currentUser.avatarUrl }
 
         if (isFirebaseAvailable) {
             try {
@@ -157,7 +162,8 @@ class AuthRepository(private val context: Context) {
                     val updates = mapOf(
                         "name" to updatedName,
                         "phone" to updatedPhone,
-                        "email" to targetEmail
+                        "email" to targetEmail,
+                        "avatarUrl" to updatedAvatar
                     )
 
                     withTimeoutOrNull(2500) {
@@ -180,7 +186,8 @@ class AuthRepository(private val context: Context) {
             email = targetEmail,
             passwordHash = currentUser.passwordHash,
             name = updatedName,
-            phone = updatedPhone
+            phone = updatedPhone,
+            avatarUrl = updatedAvatar
         )
         localUserStore.save(updatedUser)
         return Result.success(updatedUser)

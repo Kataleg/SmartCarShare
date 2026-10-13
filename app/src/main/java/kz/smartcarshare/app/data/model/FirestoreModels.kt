@@ -5,6 +5,7 @@ data class FirestoreUser(
     val email: String = "",
     val name: String = "",
     val phone: String = "",
+    val avatarUrl: String = "",
     val isEmailVerified: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

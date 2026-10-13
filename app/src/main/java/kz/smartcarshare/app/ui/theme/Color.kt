@@ -2,11 +2,11 @@ package kz.smartcarshare.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Navy900 = Color(0xFF0B0D28)
-val Navy800 = Color(0xFF12153C)
-val Surface1 = Color(0xFF1B1F58)
-val Surface2 = Color(0xFF242A6E)
-val Ice = Color(0xFF7FD8FF)
+val Navy900 = Color(0xFF010E2E)
+val Navy800 = Color(0xFF07123A)
+val Surface1 = Color(0xFF101C52)
+val Surface2 = Color(0xFF1A2768)
+val Ice = Color(0xFF00D2FF)
 val Amber = Color(0xFFFFB020)
 val TextHi = Color(0xFFF5F7FC)
 val TextMid = Color(0xFFAEB6DC)

@@ -12,9 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddRoad
 import androidx.compose.material.icons.filled.Apartment
-import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -30,9 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
-import kz.smartcarshare.app.data.formatTenge
 import kz.smartcarshare.app.data.model.LocalUser
-import kz.smartcarshare.app.ui.components.PaymentMethodsDialog
 import kz.smartcarshare.app.ui.theme.*
 
 @Composable
@@ -54,7 +50,6 @@ fun ProfileScreen(
     val displayPhone = currentUser?.phone?.takeIf { it.isNotBlank() } ?: currentUser?.email ?: (if (lang == Lang.KZ) "Тіркелгі жоқ" else "Нет аккаунта")
 
     var isEditDialogVisible by remember { mutableStateOf(false) }
-    var isPaymentDialogVisible by remember { mutableStateOf(false) }
     var isAddCarDialogVisible by remember { mutableStateOf(false) }
     var resetLinkSentNotice by remember { mutableStateOf(false) }
 
@@ -75,8 +70,6 @@ fun ProfileScreen(
     var newCarLocation by remember { mutableStateOf("Астана · Мангилик Ел") }
     var newCarImageUrl by remember { mutableStateOf("") }
     var newCarOwnerKaspi by remember(currentUser) { mutableStateOf(currentUser?.phone ?: "+7 (701) 000-00-00") }
-
-    val ownerEarnings = vm.getOwnerEarnings(currentUser?.email ?: "")
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Surface1,
@@ -123,51 +116,6 @@ fun ProfileScreen(
             }
         }
 
-        if (currentUser != null) {
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
-                        .border(1.dp, Amber.copy(alpha = 0.3f), RoundedCornerShape(18.dp)),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Surface1)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(Amber.copy(alpha = 0.2f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Filled.AttachMoney, contentDescription = null, tint = Amber, modifier = Modifier.size(24.dp))
-                        }
-                        Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                            Text(
-                                if (lang == Lang.KZ) "Жалға беруден түскен табыс" else "Доход от сдачи авто в аренду",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextMid
-                            )
-                            Text(
-                                formatTenge(ownerEarnings),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = Ice,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                if (lang == Lang.KZ) "Kaspi Перевод: ${currentUser.phone}" else "Kaspi Перевод по номеру: ${currentUser.phone}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextLow
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
         item {
             Column(
                 modifier = Modifier
@@ -179,7 +127,7 @@ fun ProfileScreen(
                     MenuRow(
                         icon = Icons.Filled.AddRoad,
                         title = if (lang == Lang.KZ) "Өз көлігімді жалға беру" else "Сдать свое авто в аренду",
-                        sub = if (lang == Lang.KZ) "+ Автомобиль қосып табыс табу" else "+ Добавить авто и получать доход",
+                        sub = if (lang == Lang.KZ) "+ Автомобиль қосу" else "+ Добавить авто",
                         onClick = { isAddCarDialogVisible = true }
                     )
                     MenuRow(
@@ -193,14 +141,8 @@ fun ProfileScreen(
                 MenuRow(
                     icon = Icons.Filled.DirectionsCar,
                     title = Strings.get(lang, "my_trips"),
-                    sub = if (lang == Lang.KZ) "Тарих пен төлем чектер" else "История и чеки поездок",
+                    sub = if (lang == Lang.KZ) "Тарих пен сапарлар" else "История поездок",
                     onClick = onMyTripsClick
-                )
-                MenuRow(
-                    icon = Icons.Filled.CreditCard,
-                    title = Strings.get(lang, "payment_methods"),
-                    sub = vm.selectedPaymentMethod.title,
-                    onClick = { isPaymentDialogVisible = true }
                 )
                 MenuRow(Icons.Filled.Apartment, Strings.get(lang, "for_business"), onClick = onB2BClick, showDivider = true)
 
@@ -257,18 +199,6 @@ fun ProfileScreen(
         }
     }
 
-    if (isPaymentDialogVisible) {
-        PaymentMethodsDialog(
-            paymentMethods = vm.paymentMethods,
-            selectedId = vm.selectedPaymentMethodId,
-            lang = lang,
-            onSelect = { vm.selectPaymentMethod(it) },
-            onAddCard = { number, holder -> vm.addCard(number, holder) },
-            onDeleteCard = { vm.deleteCard(it) },
-            onDismiss = { isPaymentDialogVisible = false }
-        )
-    }
-
     if (isAddCarDialogVisible) {
         AlertDialog(
             onDismissRequest = { isAddCarDialogVisible = false },
@@ -313,17 +243,6 @@ fun ProfileScreen(
                     }
 
                     OutlinedTextField(
-                        value = newCarOwnerKaspi,
-                        onValueChange = { newCarOwnerKaspi = it },
-                        label = { Text(if (lang == Lang.KZ) "Ақша қабылдайтын Kaspi Номер" else "Kaspi Номер для перевода денег") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        colors = textFieldColors,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
                         value = newCarLocation,
                         onValueChange = { newCarLocation = it },
                         label = { Text(if (lang == Lang.KZ) "Астанадағы орналасқан жері" else "Локация в Астане") },
@@ -341,12 +260,6 @@ fun ProfileScreen(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
-                    )
-
-                    Text(
-                        if (lang == Lang.KZ) "Клиенттер төлемді осы Kaspi номерге ($newCarOwnerKaspi) аударады" else "Клиенты будут переводить оплату на ваш Kaspi номер ($newCarOwnerKaspi)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Ice
                     )
                 }
             },

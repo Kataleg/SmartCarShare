@@ -8,17 +8,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kz.smartcarshare.app.data.model.FirestoreCard
 import kz.smartcarshare.app.data.model.FirestoreRental
-import kz.smartcarshare.app.data.model.PaymentMethod
-import kz.smartcarshare.app.data.model.PaymentType
 import kz.smartcarshare.app.data.repository.FirestoreRentalRepository
 
 enum class Tariff { HOUR, DAY }
@@ -34,15 +27,6 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
 
     var currentLang by mutableStateOf(Lang.KZ)
         private set
-
-    var selectedPaymentMethodId by mutableStateOf("kaspi")
-        private set
-
-    var paymentMethods by mutableStateOf(
-        listOf(
-            PaymentMethod("kaspi", "Kaspi.kz / Kaspi Pay", "Kaspi Автоплатеж", PaymentType.KASPI_PAY, isDefault = true)
-        )
-    )
 
     private val localTripHistory = mutableStateListOf<FirestoreRental>()
     private var firestoreTripHistory by mutableStateOf<List<FirestoreRental>>(emptyList())
@@ -60,30 +44,6 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
     fun loadUserData(userId: String) {
         if (userId.isBlank()) return
         loadTripHistory(userId)
-        viewModelScope.launch {
-            try {
-                val authUser = FirebaseAuth.getInstance().currentUser
-                if (authUser != null) {
-                    val doc = FirebaseFirestore.getInstance().collection("users").document(authUser.uid).get().await()
-                    if (doc.exists()) {
-                        @Suppress("UNCHECKED_CAST")
-                        val cardsList = doc.get("paymentMethods") as? List<Map<String, Any>>
-                        if (!cardsList.isNullOrEmpty()) {
-                            paymentMethods = cardsList.map { map ->
-                                PaymentMethod(
-                                    id = map["id"] as? String ?: "card",
-                                    title = map["title"] as? String ?: "Visa",
-                                    subtitle = map["subtitle"] as? String ?: "",
-                                    type = try { PaymentType.valueOf(map["type"] as? String ?: "VISA_MASTERCARD") } catch(_:Exception){ PaymentType.VISA_MASTERCARD },
-                                    isDefault = map["isDefault"] as? Boolean ?: false
-                                )
-                            }
-                            selectedPaymentMethodId = paymentMethods.firstOrNull { it.isDefault }?.id ?: paymentMethods.first().id
-                        }
-                    }
-                }
-            } catch (_: Exception) {}
-        }
     }
 
     fun loadTripHistory(userId: String) {
@@ -93,24 +53,6 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
             res.onSuccess { list ->
                 firestoreTripHistory = list
             }
-        }
-    }
-
-    private fun saveCardsToFirestore() {
-        val authUser = FirebaseAuth.getInstance().currentUser
-        if (authUser != null) {
-            val firestoreCards = paymentMethods.map {
-                FirestoreCard(
-                    id = it.id,
-                    title = it.title,
-                    subtitle = it.subtitle,
-                    type = it.type.name,
-                    isDefault = it.isDefault
-                )
-            }
-            FirebaseFirestore.getInstance().collection("users")
-                .document(authUser.uid)
-                .set(mapOf("paymentMethods" to firestoreCards), SetOptions.merge())
         }
     }
 
@@ -145,47 +87,11 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         customCars.add(newCar)
     }
 
-    val selectedPaymentMethod: PaymentMethod
-        get() = paymentMethods.firstOrNull { it.id == selectedPaymentMethodId } ?: paymentMethods.first()
-
-    fun selectPaymentMethod(id: String) {
-        selectedPaymentMethodId = id
-        paymentMethods = paymentMethods.map { it.copy(isDefault = (it.id == id)) }
-        saveCardsToFirestore()
-    }
-
-    fun addCard(number: String, holder: String) {
-        val digitsOnly = number.filter { it.isDigit() }
-        val last4 = if (digitsOnly.length >= 4) digitsOnly.takeLast(4) else "0000"
-        val newId = "card_${System.currentTimeMillis()}"
-        val newCard = PaymentMethod(
-            id = newId,
-            title = "Visa •••• $last4",
-            subtitle = holder.ifBlank { "Карта иесі" },
-            type = PaymentType.VISA_MASTERCARD,
-            isDefault = true
-        )
-        paymentMethods = paymentMethods.map { it.copy(isDefault = false) } + newCard
-        selectedPaymentMethodId = newId
-        saveCardsToFirestore()
-    }
-
-    fun deleteCard(id: String) {
-        if (paymentMethods.size <= 1) return
-        val updated = paymentMethods.filterNot { it.id == id }
-        paymentMethods = updated
-        if (selectedPaymentMethodId == id) {
-            selectedPaymentMethodId = updated.first().id
-        }
-        saveCardsToFirestore()
-    }
-
     var selectedCarId by mutableStateOf<Int?>(null)
         private set
     var tariff by mutableStateOf(Tariff.HOUR)
         private set
     var insuranceOn by mutableStateOf(false)
-    var autopayOn by mutableStateOf(true)
     var elapsedSeconds by mutableStateOf(0)
         private set
     var rentalActive by mutableStateOf(false)

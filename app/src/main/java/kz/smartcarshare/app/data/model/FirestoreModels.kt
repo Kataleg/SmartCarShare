@@ -1,20 +1,11 @@
 package kz.smartcarshare.app.data.model
 
-data class FirestoreCard(
-    val id: String = "",
-    val title: String = "",
-    val subtitle: String = "",
-    val type: String = "VISA_MASTERCARD",
-    val isDefault: Boolean = false
-)
-
 data class FirestoreUser(
     val uid: String = "",
     val email: String = "",
     val name: String = "",
     val phone: String = "",
     val isEmailVerified: Boolean = false,
-    val paymentMethods: List<FirestoreCard> = emptyList(),
     val createdAt: Long = System.currentTimeMillis()
 )
 

@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.DirectionsCar
@@ -83,20 +85,70 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        brush = Brush.linearGradient(listOf(Surface1, Amber.copy(alpha = 0.12f))),
-                        shape = RoundedCornerShape(22.dp)
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Surface2,
+                                Surface1,
+                                ElectricIndigo.copy(alpha = 0.15f),
+                                Amber.copy(alpha = 0.12f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(26.dp)
                     )
-                    .border(1.dp, BorderColor, RoundedCornerShape(22.dp))
+                    .border(1.dp, BorderLight, RoundedCornerShape(26.dp))
                     .padding(20.dp)
             ) {
-                Column {
-                    Text(greetingText, style = MaterialTheme.typography.bodySmall, color = TextMid)
-                    Text(
-                        Strings.get(lang, "home_greeting"),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = TextHi,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(Success)
+                            )
+                            Text(
+                                text = "Smart CarShare · 24/7",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Ice,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = greetingText,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = TextHi,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            text = Strings.get(lang, "home_greeting"),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextMid,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                    Surface(
+                        color = Amber.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, Amber.copy(alpha = 0.4f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.DirectionsCar,
+                            contentDescription = null,
+                            tint = Amber,
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .size(28.dp)
+                        )
+                    }
                 }
             }
         }
@@ -125,7 +177,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(52.dp)
                         .background(
-                            if (vm.sortOrder != SortOrder.NONE || vm.selectedSeatsFilter != "Барлығы" || vm.selectedBrand != "Барлығы" || vm.selectedBodyType != "Барлығы" || vm.selectedClass != "Барлығы") Amber else Surface1,
+                            if (vm.sortOrder != SortOrder.NONE || vm.selectedCompanyFilter != "Барлығы" && vm.selectedCompanyFilter != "Все" || vm.selectedSeatsFilter != "Барлығы" || vm.selectedBrand != "Барлығы" || vm.selectedBodyType != "Барлығы" || vm.selectedClass != "Барлығы") Amber else Surface1,
                             RoundedCornerShape(16.dp)
                         )
                         .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
@@ -133,7 +185,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Filled.Tune,
                         contentDescription = "Фильтр",
-                        tint = if (vm.sortOrder != SortOrder.NONE || vm.selectedSeatsFilter != "Барлығы" || vm.selectedBrand != "Барлығы" || vm.selectedBodyType != "Барлығы" || vm.selectedClass != "Барлығы") AmberOnDark else Ice
+                        tint = if (vm.sortOrder != SortOrder.NONE || vm.selectedCompanyFilter != "Барлығы" && vm.selectedCompanyFilter != "Все" || vm.selectedSeatsFilter != "Барлығы" || vm.selectedBrand != "Барлығы" || vm.selectedBodyType != "Барлығы" || vm.selectedClass != "Барлығы") AmberOnDark else Ice
                     )
                 }
             }
@@ -233,6 +285,14 @@ fun HomeScreen(
                     style = MaterialTheme.typography.titleLarge,
                     color = TextHi,
                     fontWeight = FontWeight.Bold
+                )
+
+                Text(if (lang == Lang.KZ) "Компания бойынша:" else "По компании:", style = MaterialTheme.typography.labelLarge, color = Amber)
+                ExpandableChipGrid(
+                    items = vm.companyFilterOptions,
+                    selectedItem = vm.selectedCompanyFilter,
+                    lang = lang,
+                    onSelect = { vm.selectedCompanyFilter = it }
                 )
 
                 Text(if (lang == Lang.KZ) "Маркасы бойынша:" else "По марке:", style = MaterialTheme.typography.labelLarge, color = Amber)
@@ -424,72 +484,143 @@ private fun ExpandableChipGrid(
 @Composable
 private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
     val context = LocalContext.current
-    Row(
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(22.dp),
+        color = Surface1,
+        border = BorderStroke(1.dp, BorderColor),
+        shadowElevation = 3.dp,
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 12.dp)
-            .background(Surface1, RoundedCornerShape(18.dp))
-            .border(1.dp, BorderColor, RoundedCornerShape(18.dp))
-            .clickable { onClick() }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        if (car.displayImageUrl.isNotBlank()) {
-            Box(
-                modifier = Modifier
-                    .size(width = 80.dp, height = 58.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Surface2, RoundedCornerShape(12.dp))
-                    .border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(car.displayImageUrl)
-                        .crossfade(true)
-                        .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
-                        .build(),
-                    contentDescription = car.name,
-                    contentScale = ContentScale.Crop,
-                    error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
-                    placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        } else {
-            IconBadge(
-                icon = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,
-                bg = Ice,
-                tint = AmberOnDark
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(car.name, style = MaterialTheme.typography.titleMedium, color = TextHi)
-            Text(car.location, style = MaterialTheme.typography.bodySmall, color = TextLow)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.padding(top = 5.dp)
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                car.tags.forEach { Chip(it) }
+                Box(
+                    modifier = Modifier
+                        .size(width = 88.dp, height = 64.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Surface2)
+                        .border(1.dp, BorderColor, RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (car.displayImageUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(car.displayImageUrl)
+                                .crossfade(true)
+                                .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
+                                .build(),
+                            contentDescription = car.name,
+                            contentScale = ContentScale.Crop,
+                            error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
+                            placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        IconBadge(
+                            icon = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,
+                            bg = Ice.copy(alpha = 0.2f),
+                            tint = Ice,
+                            sizeDp = 42
+                        )
+                    }
+
+                    if (car.isLux) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(4.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Amber)
+                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "LUX",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Black,
+                                color = AmberOnDark
+                            )
+                        }
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = car.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = TextHi,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = car.location,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextLow,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = formatTenge(car.pricePerHour),
+                        color = Ice,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        text = if (lang == Lang.KZ) "/ сағат" else "/ час",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMid
+                    )
+                }
             }
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(formatTenge(car.pricePerHour), color = Ice, style = MaterialTheme.typography.titleMedium)
-            Text(if (lang == Lang.KZ) "/ сағат" else "/ час", style = MaterialTheme.typography.bodySmall, color = TextMid)
-            Spacer(Modifier.height(4.dp))
-            Surface(
-                color = Ice.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, Ice.copy(alpha = 0.4f))
+
+            Spacer(Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = if (lang == Lang.KZ) "Брондау" else "Забронировать",
-                    color = Ice,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    car.tags.forEach { tag ->
+                        Chip(text = tag)
+                    }
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                Surface(
+                    onClick = onClick,
+                    color = Amber,
+                    shape = RoundedCornerShape(100.dp),
+                    shadowElevation = 2.dp
+                ) {
+                    Text(
+                        text = if (lang == Lang.KZ) "Брондау" else "Забронировать",
+                        color = AmberOnDark,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                    )
+                }
             }
         }
     }

@@ -1,16 +1,21 @@
 package kz.smartcarshare.app.ui.screens
 
+import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AddRoad
@@ -22,21 +27,26 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.model.LocalUser
 import kz.smartcarshare.app.ui.theme.*
+import java.io.File
 
 @Composable
 fun ProfileScreen(
@@ -56,6 +66,8 @@ fun ProfileScreen(
     val displayName = currentUser?.name?.takeIf { it.isNotBlank() } ?: (if (lang == Lang.KZ) "Пайдаланушы" else "Пользователь")
     val displayPhone = currentUser?.phone?.takeIf { it.isNotBlank() } ?: currentUser?.email ?: (if (lang == Lang.KZ) "Тіркелгі жоқ" else "Нет аккаунта")
 
+    val context = LocalContext.current
+
     var isEditDialogVisible by remember { mutableStateOf(false) }
     var isAddCarDialogVisible by remember { mutableStateOf(false) }
     var resetLinkSentNotice by remember { mutableStateOf(false) }
@@ -72,20 +84,53 @@ fun ProfileScreen(
     var editEmail by remember(currentUser) { mutableStateOf(currentUser?.email ?: "") }
     var editAvatarUrl by remember(currentUser) { mutableStateOf(currentUser?.avatarUrl ?: "") }
 
-    val galleryLauncher = rememberLauncherForActivityResult(
+    val avatarGalleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            editAvatarUrl = uri.toString()
+            val permanentUrl = saveUriToInternalStorage(context, uri, "avatar")
+            editAvatarUrl = permanentUrl
+        }
+    }
+
+    val avatarCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            val permanentUrl = saveBitmapToInternalStorage(context, bitmap, "avatar")
+            editAvatarUrl = permanentUrl
         }
     }
 
     var newCarName by remember { mutableStateOf("") }
-    var newCarPriceHour by remember { mutableStateOf("1200") }
-    var newCarPriceDay by remember { mutableStateOf("15000") }
+    var newCarPriceHour by remember { mutableStateOf("2000") }
+    var newCarPriceDay by remember { mutableStateOf("20000") }
     var newCarLocation by remember { mutableStateOf("Астана · Мангилик Ел") }
+    var newCarTransmission by remember { mutableStateOf("Автомат") }
+    var newCarFuel by remember { mutableStateOf("Бензин AI-95") }
+    var newCarSeats by remember { mutableStateOf("5 орын") }
+    var newCarCategory by remember { mutableStateOf("Комфорт") }
+    var newCarIsLux by remember { mutableStateOf(false) }
     var newCarImageUrl by remember { mutableStateOf("") }
     var newCarOwnerKaspi by remember(currentUser) { mutableStateOf(currentUser?.phone ?: "+7 (701) 000-00-00") }
+
+    val carGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val permanentUrl = saveUriToInternalStorage(context, uri, "car")
+            newCarImageUrl = permanentUrl
+        }
+    }
+
+    val carCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            val permanentUrl = saveBitmapToInternalStorage(context, bitmap, "car")
+            newCarImageUrl = permanentUrl
+        }
+    }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Surface1,
@@ -103,41 +148,103 @@ fun ProfileScreen(
         contentPadding = PaddingValues(20.dp)
     ) {
         item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 18.dp)
+            Surface(
+                shape = RoundedCornerShape(26.dp),
+                color = Surface1,
+                border = BorderStroke(1.dp, BorderColor),
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 18.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(Ice, CircleShape)
-                        .clickable { if (currentUser != null) isEditDialogVisible = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!currentUser?.avatarUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = currentUser.avatarUrl,
-                            contentDescription = "Аватар",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        Text(initial, color = Navy900, style = MaterialTheme.typography.headlineSmall)
-                    }
-                }
-                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                    Text(displayName, style = MaterialTheme.typography.titleLarge, color = TextHi)
-                    Text(displayPhone, style = MaterialTheme.typography.bodySmall, color = TextMid)
-                }
-                if (currentUser != null) {
-                    IconButton(
-                        onClick = { isEditDialogVisible = true },
-                        modifier = Modifier
-                            .background(Surface1, RoundedCornerShape(12.dp))
-                            .border(1.dp, BorderColor, RoundedCornerShape(12.dp))
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Filled.Edit, contentDescription = "Өңдеу", tint = Ice)
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.linearGradient(listOf(Ice, ElectricIndigo))
+                                )
+                                .padding(3.dp)
+                                .clip(CircleShape)
+                                .background(Navy900)
+                                .clickable { if (currentUser != null) isEditDialogVisible = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!currentUser?.avatarUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = currentUser.avatarUrl,
+                                    contentDescription = "Аватар",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Text(
+                                    text = initial,
+                                    color = Ice,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .padding(start = 14.dp)
+                                .weight(1f)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = displayName,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = TextHi,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                                Surface(
+                                    color = Ice.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "PRO",
+                                        color = Ice,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = displayPhone,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextMid,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+
+                        if (currentUser != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Surface2)
+                                    .border(1.dp, BorderColor, RoundedCornerShape(12.dp))
+                                    .clickable { isEditDialogVisible = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Edit,
+                                    contentDescription = "Өңдеу",
+                                    tint = Ice,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -231,10 +338,15 @@ fun ProfileScreen(
             onDismissRequest = { isAddCarDialogVisible = false },
             containerColor = Surface1,
             title = {
-                Text(if (lang == Lang.KZ) "Өз көлігіңді жалға беру" else "Сдать свое авто в аренду", color = TextHi)
+                Text(if (lang == Lang.KZ) "Өз көлігіңді жалға беру" else "Сдать свое авто в аренду", color = TextHi, fontWeight = FontWeight.Bold)
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     OutlinedTextField(
                         value = newCarName,
                         onValueChange = { newCarName = it },
@@ -249,7 +361,7 @@ fun ProfileScreen(
                         OutlinedTextField(
                             value = newCarPriceHour,
                             onValueChange = { newCarPriceHour = it.filter { c -> c.isDigit() } },
-                            label = { Text(if (lang == Lang.KZ) "Бағасы ₸ / сағат" else "Цена ₸ / час") },
+                            label = { Text(if (lang == Lang.KZ) "₸ / сағат" else "₸ / час") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             colors = textFieldColors,
                             shape = RoundedCornerShape(12.dp),
@@ -260,7 +372,7 @@ fun ProfileScreen(
                         OutlinedTextField(
                             value = newCarPriceDay,
                             onValueChange = { newCarPriceDay = it.filter { c -> c.isDigit() } },
-                            label = { Text(if (lang == Lang.KZ) "Бағасы ₸ / тәулік" else "Цена ₸ / сутки") },
+                            label = { Text(if (lang == Lang.KZ) "₸ / тәулік" else "₸ / сутки") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             colors = textFieldColors,
                             shape = RoundedCornerShape(12.dp),
@@ -279,10 +391,129 @@ fun ProfileScreen(
                         singleLine = true
                     )
 
+                    Text(if (lang == Lang.KZ) "Беріліс қорабы:" else "Коробка передач:", style = MaterialTheme.typography.labelMedium, color = Amber)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("Автомат", "Механика", "Вариатор", "Робот").forEach { tr ->
+                            FilterChip(
+                                selected = newCarTransmission == tr,
+                                onClick = { newCarTransmission = tr },
+                                label = { Text(tr, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
+                    Text(if (lang == Lang.KZ) "Отын түрі:" else "Тип топлива:", style = MaterialTheme.typography.labelMedium, color = Amber)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("Бензин AI-95", "Бензин AI-92", "Дизель", "Электр", "Гибрид").take(3).forEach { fl ->
+                            FilterChip(
+                                selected = newCarFuel == fl,
+                                onClick = { newCarFuel = fl },
+                                label = { Text(fl, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
+                    Text(if (lang == Lang.KZ) "Орын саны:" else "Количество мест:", style = MaterialTheme.typography.labelMedium, color = Amber)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("2 орын", "4 орын", "5 орын", "7 орын", "8 орын").forEach { st ->
+                            FilterChip(
+                                selected = newCarSeats == st,
+                                onClick = { newCarSeats = st },
+                                label = { Text(st, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
+                    Text(if (lang == Lang.KZ) "Көлік класы / Категория:" else "Класс / Категория:", style = MaterialTheme.typography.labelMedium, color = Amber)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("Эконом", "Комфорт", "Бизнес", "Кроссовер", "Lux").forEach { cat ->
+                            FilterChip(
+                                selected = newCarCategory == cat,
+                                onClick = { newCarCategory = cat },
+                                label = { Text(cat, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Checkbox(
+                            checked = newCarIsLux,
+                            onCheckedChange = { newCarIsLux = it },
+                            colors = CheckboxDefaults.colors(checkedColor = Amber, checkmarkColor = AmberOnDark)
+                        )
+                        Text(if (lang == Lang.KZ) "Lux / Премиум статус" else "Статус Lux / Премиум", color = TextHi, style = MaterialTheme.typography.bodySmall)
+                    }
+
+                    Text(if (lang == Lang.KZ) "Көліктің фотосы:" else "Фотография авто:", style = MaterialTheme.typography.labelMedium, color = Amber)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { carCameraLauncher.launch(null) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ice),
+                            border = BorderStroke(1.dp, Ice)
+                        ) {
+                            Icon(Icons.Filled.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (lang == Lang.KZ) "Камера" else "Камера", fontSize = 11.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = { carGalleryLauncher.launch("image/*") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ice),
+                            border = BorderStroke(1.dp, Ice)
+                        ) {
+                            Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (lang == Lang.KZ) "Галерея" else "Галерея", fontSize = 11.sp)
+                        }
+                    }
+
+                    if (newCarImageUrl.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(130.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Surface2)
+                                .border(1.dp, Success, RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = newCarImageUrl,
+                                contentDescription = "Көлік суреті",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
                     OutlinedTextField(
-                        value = newCarImageUrl,
-                        onValueChange = { newCarImageUrl = it },
-                        label = { Text(if (lang == Lang.KZ) "Сурет URL (міндетті емес)" else "Ссылка на фото (необязательно)") },
+                        value = newCarOwnerKaspi,
+                        onValueChange = { newCarOwnerKaspi = it },
+                        label = { Text(if (lang == Lang.KZ) "Kaspi телефон номеріңіз (төлемдер үшін)" else "Номер Kaspi для получения выплат") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                         colors = textFieldColors,
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth(),
@@ -294,20 +525,26 @@ fun ProfileScreen(
                 Button(
                     onClick = {
                         if (newCarName.isNotBlank()) {
-                            val pHour = newCarPriceHour.toIntOrNull() ?: 1200
-                            val pDay = newCarPriceDay.toIntOrNull() ?: 15000
+                            val pHour = newCarPriceHour.toIntOrNull() ?: 2000
+                            val pDay = newCarPriceDay.toIntOrNull() ?: 20000
                             vm.addCustomCar(
                                 name = newCarName.trim(),
                                 pricePerHour = pHour,
                                 pricePerDay = pDay,
                                 location = newCarLocation.trim(),
                                 imageUrl = newCarImageUrl.trim(),
+                                seats = newCarSeats,
+                                transmission = newCarTransmission,
+                                fuel = newCarFuel,
+                                categoryClass = newCarCategory,
+                                isLux = newCarIsLux,
                                 ownerName = currentUser?.name ?: "Падаланушы",
                                 ownerEmail = currentUser?.email ?: "user@smartcarshare.kz",
                                 ownerKaspiNumber = newCarOwnerKaspi.trim()
                             )
                             isAddCarDialogVisible = false
                             newCarName = ""
+                            newCarImageUrl = ""
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Amber, contentColor = AmberOnDark)
@@ -356,23 +593,63 @@ fun ProfileScreen(
                         )
                     }
 
-                    OutlinedButton(
-                        onClick = { galleryLauncher.launch("image/*") },
+                    Text(if (lang == Lang.KZ) "Профиль суреті:" else "Фото профиля:", style = MaterialTheme.typography.labelSmall, color = Amber)
+
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ice)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(if (lang == Lang.KZ) "Галереядан сурет таңдау" else "Выбрать фото из галереи")
+                        OutlinedButton(
+                            onClick = { avatarCameraLauncher.launch(null) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ice),
+                            border = BorderStroke(1.dp, Ice)
+                        ) {
+                            Icon(Icons.Filled.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (lang == Lang.KZ) "Камера" else "Камера", fontSize = 11.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = { avatarGalleryLauncher.launch("image/*") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ice),
+                            border = BorderStroke(1.dp, Ice)
+                        ) {
+                            Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (lang == Lang.KZ) "Галерея" else "Галерея", fontSize = 11.sp)
+                        }
                     }
 
                     if (editAvatarUrl.isNotBlank()) {
-                        Text(
-                            text = if (lang == Lang.KZ) "Таңдалған сурет жолы орнатылды" else "Фото успешно выбрано",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Success
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Surface2)
+                                    .border(1.dp, Success, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = editAvatarUrl,
+                                    contentDescription = "Аватар",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            Text(
+                                text = if (lang == Lang.KZ) "Сурет орнатылды және сақталады" else "Фото успешно выбрано и будет сохранено",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Success
+                            )
+                        }
                     }
 
                     OutlinedTextField(
@@ -492,5 +769,30 @@ private fun MenuRow(
                     .background(BorderColor)
             )
         }
+    }
+}
+
+private fun saveUriToInternalStorage(context: Context, uri: Uri, prefix: String): String {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return uri.toString()
+        val file = File(context.filesDir, "${prefix}_${System.currentTimeMillis()}.jpg")
+        file.outputStream().use { output ->
+            inputStream.copyTo(output)
+        }
+        Uri.fromFile(file).toString()
+    } catch (e: Exception) {
+        uri.toString()
+    }
+}
+
+private fun saveBitmapToInternalStorage(context: Context, bitmap: Bitmap, prefix: String): String {
+    return try {
+        val file = File(context.filesDir, "${prefix}_${System.currentTimeMillis()}.jpg")
+        file.outputStream().use { output ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output)
+        }
+        Uri.fromFile(file).toString()
+    } catch (e: Exception) {
+        ""
     }
 }

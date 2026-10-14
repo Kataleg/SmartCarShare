@@ -8,10 +8,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kz.smartcarshare.app.data.model.FirestoreRental
+import kz.smartcarshare.app.data.repository.FirestoreCompanyRepository
 import kz.smartcarshare.app.data.repository.FirestoreRentalRepository
 
 enum class Tariff { HOUR, DAY }
@@ -20,6 +22,13 @@ enum class SortOrder { NONE, PRICE_ASC, PRICE_DESC }
 class RentalViewModel(application: Application) : AndroidViewModel(application) {
 
     private val rentalRepository = FirestoreRentalRepository(application)
+    private val companyRepository = FirestoreCompanyRepository(application)
+
+    init {
+        viewModelScope.launch {
+            companyRepository.syncCompanyAndCarsToFirestore()
+        }
+    }
 
     private val customCars = mutableStateListOf<Car>()
 
@@ -31,6 +40,7 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
 
     var searchQuery by mutableStateOf("")
     var selectedCategory by mutableStateOf("Барлығы")
+    var selectedCompanyFilter by mutableStateOf("Барлығы")
     var selectedSeatsFilter by mutableStateOf("Барлығы")
     var selectedBrand by mutableStateOf("Барлығы")
     var selectedBodyType by mutableStateOf("Барлығы")
@@ -43,6 +53,13 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
 
     val categories: List<String>
         get() = listOf(allLabel, "CashAuto", "Мото", "Эконом", "Кроссовер", "Бизнес", "Минивэн", "Lux")
+
+    val companyFilterOptions: List<String>
+        get() = listOf(allLabel) + CompanyData.allCompanies.map { it.name }
+
+    private fun matchesCompany(car: Car, comp: String): Boolean =
+        if (comp == "Барлығы" || comp == "Все") true
+        else car.company.contains(comp, ignoreCase = true) || comp.contains(car.company, ignoreCase = true)
 
     private fun matchesCat(car: Car, cat: String): Boolean = when (cat) {
         "CashAuto" -> car.company.contains("CashAuto", ignoreCase = true)
@@ -125,12 +142,13 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
                     car.tags.any { it.contains(searchQuery, ignoreCase = true) }
 
                 val matchesCategory = selectedCategory == "Барлығы" || selectedCategory == "Все" || matchesCat(car, selectedCategory)
+                val matchesCompany = selectedCompanyFilter == "Барлығы" || selectedCompanyFilter == "Все" || matchesCompany(car, selectedCompanyFilter)
                 val matchesSeats = selectedSeatsFilter == "Барлығы" || selectedSeatsFilter == "Все" || matchesSeat(car, selectedSeatsFilter)
                 val matchesBrand = selectedBrand == "Барлығы" || selectedBrand == "Все" || matchesBr(car, selectedBrand)
                 val matchesBodyType = selectedBodyType == "Барлығы" || selectedBodyType == "Все" || matchesBody(car, selectedBodyType)
                 val matchesClass = selectedClass == "Барлығы" || selectedClass == "Все" || matchesCls(car, selectedClass)
 
-                matchesSearch && matchesCategory && matchesSeats && matchesBrand && matchesBodyType && matchesClass
+                matchesSearch && matchesCategory && matchesCompany && matchesSeats && matchesBrand && matchesBodyType && matchesClass
             }
 
             return when (sortOrder) {
@@ -143,6 +161,7 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
     fun resetFilters() {
         searchQuery = ""
         selectedCategory = allLabel
+        selectedCompanyFilter = allLabel
         selectedSeatsFilter = allLabel
         selectedBrand = allLabel
         selectedBodyType = allLabel
@@ -184,29 +203,63 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         pricePerDay: Int?,
         location: String,
         imageUrl: String,
+        seats: String = "5 орын",
+        transmission: String = "Автомат",
+        fuel: String = "Бензин AI-95",
+        categoryClass: String = "Комфорт",
+        isLux: Boolean = false,
         ownerName: String,
         ownerEmail: String,
         ownerKaspiNumber: String = ""
     ) {
         val newId = cars.maxOfOrNull { it.id }?.plus(1) ?: 100
+        val tagsList = mutableListOf("Жеке авто", "P2P", categoryClass)
+        if (isLux) tagsList.add("Lux")
+
         val newCar = Car(
             id = newId,
             name = name,
-            company = "Жеке иесі: $ownerName",
+            company = "Жеке иесі: ${ownerName.ifBlank { "Пайдаланушы" }}",
             location = location.ifBlank { "Астана" },
             imageUrl = imageUrl.ifBlank { "https://images.unsplash.com/photo-1590362891991-f776e747a588?q=80&w=800" },
-            tags = listOf("Жеке авто", "P2P", "Каршеринг"),
-            seats = "5 орын",
-            transmission = "Автомат",
-            fuel = "Бензин AI-95",
+            tags = tagsList,
+            seats = seats.ifBlank { "5 орын" },
+            transmission = transmission.ifBlank { "Автомат" },
+            fuel = fuel.ifBlank { "Бензин AI-95" },
             pricePerHour = pricePerHour,
             pricePerDay = pricePerDay,
-            isLux = false,
+            isLux = isLux,
             ownerEmail = ownerEmail.trim().lowercase(),
             ownerName = ownerName,
             ownerKaspiNumber = ownerKaspiNumber.ifBlank { "+7 (777) 000-00-00" }
         )
-        customCars.add(newCar)
+        customCars.add(0, newCar)
+
+        // Upload custom car to Firestore 'cars' collection so it persists in cloud DB!
+        viewModelScope.launch {
+            try {
+                val firestore = FirebaseFirestore.getInstance()
+                val carMap = mapOf(
+                    "id" to newCar.id,
+                    "name" to newCar.name,
+                    "company" to newCar.company,
+                    "location" to newCar.location,
+                    "imageUrl" to newCar.imageUrl,
+                    "displayImageUrl" to newCar.displayImageUrl,
+                    "tags" to newCar.tags,
+                    "seats" to newCar.seats,
+                    "transmission" to newCar.transmission,
+                    "fuel" to newCar.fuel,
+                    "pricePerHour" to newCar.pricePerHour,
+                    "pricePerDay" to (newCar.pricePerDay ?: 0),
+                    "isLux" to newCar.isLux,
+                    "ownerEmail" to newCar.ownerEmail,
+                    "ownerName" to newCar.ownerName,
+                    "ownerKaspiNumber" to newCar.ownerKaspiNumber
+                )
+                firestore.collection("cars").document("car_${newCar.id}").set(carMap)
+            } catch (_: Exception) {}
+        }
     }
 
     var selectedCarId by mutableStateOf<Int?>(null)

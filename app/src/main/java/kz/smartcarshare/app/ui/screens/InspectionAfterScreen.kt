@@ -1,5 +1,9 @@
 package kz.smartcarshare.app.ui.screens
 
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,43 +11,50 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
+import coil.compose.AsyncImage
 import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.formatTenge
 import kz.smartcarshare.app.ui.components.*
 import kz.smartcarshare.app.ui.theme.*
-
-private enum class AfterScan { IDLE, ANALYZING, DONE }
+import java.io.File
 
 @Composable
 fun InspectionAfterScreen(
     vm: RentalViewModel,
     onDone: () -> Unit
 ) {
-    var scanState by remember { mutableStateOf(AfterScan.IDLE) }
+    val context = LocalContext.current
+    var photoUri by remember { mutableStateOf<String?>(null) }
     var rating by remember { mutableStateOf(5) }
     val lang = vm.currentLang
 
-    LaunchedEffect(scanState) {
-        if (scanState == AfterScan.ANALYZING) {
-            delay(1400)
-            scanState = AfterScan.DONE
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            val file = File(context.filesDir, "after_inspection_${System.currentTimeMillis()}.jpg")
+            file.outputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            photoUri = Uri.fromFile(file).toString()
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
-            if (lang == Lang.KZ) "ЖИ-тексеру · қорытынды" else "AI-проверка · итоги",
+            if (lang == Lang.KZ) "ЖИ-тексеру · қорытынды" else "ИИ-проверка · итоги",
             style = MaterialTheme.typography.titleLarge,
             color = TextHi,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
@@ -57,78 +68,95 @@ fun InspectionAfterScreen(
         ) {
             item {
                 Text(
-                    text = if (lang == Lang.KZ) "Тапсыру алдында соңғы суретке түсіріңіз — жүйе оны бастапқы фотомен автоматты салыстырады." else "Сделайте финальное фото перед сдачей — система автоматически сравнит его с начальным.",
+                    text = if (lang == Lang.KZ) "Тапсыру алдында соңғы суретке түсіріңіз — жүйе суретті сақтайды." else "Сделайте финальное фото перед сдачей — фотофиксация сохранится в системе.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMid,
                     modifier = Modifier.padding(bottom = 14.dp)
                 )
             }
             item {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(4f / 3f)
+                        .clip(RoundedCornerShape(20.dp))
                         .background(Surface1, RoundedCornerShape(20.dp))
-                        .border(1.5.dp, BorderColor, RoundedCornerShape(20.dp)),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .border(1.5.dp, if (photoUri != null) Success else BorderColor, RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    when (scanState) {
-                        AfterScan.IDLE -> {
-                            Icon(Icons.Filled.CameraAlt, contentDescription = null, tint = TextMid)
-                            Spacer(Modifier.height(8.dp))
+                    if (photoUri != null) {
+                        AsyncImage(
+                            model = photoUri,
+                            contentDescription = "Соңғы сурет",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Surface(
+                            color = Success,
+                            shape = RoundedCornerShape(100.dp),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = AmberOnDark, modifier = Modifier.size(16.dp))
+                                Text(
+                                    if (lang == Lang.KZ) "Соңғы фото сақталды" else "Финальное фото сохранено",
+                                    color = AmberOnDark,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = Ice, modifier = Modifier.size(48.dp))
+                            Spacer(Modifier.height(10.dp))
                             Text(if (lang == Lang.KZ) "Соңғы суретке түсіру" else "Сделать финальное фото", style = MaterialTheme.typography.labelLarge, color = TextHi)
                         }
-                        AfterScan.ANALYZING -> {
-                            CircularProgressIndicator(color = Ice)
-                            Spacer(Modifier.height(10.dp))
-                            Text(if (lang == Lang.KZ) "Салыстыру жүргізілуде..." else "Выполняется сравнение...", style = MaterialTheme.typography.labelLarge, color = Ice)
-                        }
-                        AfterScan.DONE -> {
-                            Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Success)
-                            Spacer(Modifier.height(8.dp))
-                            Text(if (lang == Lang.KZ) "Сурет сәтті тіркелді" else "Фото успешно зарегистрировано", style = MaterialTheme.typography.labelLarge, color = TextHi)
-                        }
                     }
                 }
             }
             item {
-                if (scanState == AfterScan.IDLE) {
-                    OutlinedButton(
-                        onClick = { scanState = AfterScan.ANALYZING },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 14.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(Icons.Filled.CameraAlt, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (lang == Lang.KZ) "Суретке түсіру" else "Сделать фото", color = TextHi)
-                    }
+                Button(
+                    onClick = { cameraLauncher.launch(null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Ice, contentColor = Navy900)
+                ) {
+                    Icon(Icons.Filled.PhotoCamera, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (photoUri == null)
+                            (if (lang == Lang.KZ) "Камераны ашу және суретке түсіру" else "Открыть камеру и сделать фото")
+                        else
+                            (if (lang == Lang.KZ) "Қайта суретке түсіру" else "Переснять фото"),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
             item {
-                if (scanState == AfterScan.DONE) {
+                if (photoUri != null) {
                     Column {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            PhotoPlaceholder(if (lang == Lang.KZ) "Дейін" else "До", Modifier.weight(1f))
-                            PhotoPlaceholder(if (lang == Lang.KZ) "Кейін" else "После", Modifier.weight(1f))
-                        }
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 12.dp)
+                                .padding(top = 16.dp)
                                 .background(Surface1, RoundedCornerShape(18.dp))
                                 .border(1.dp, BorderColor, RoundedCornerShape(18.dp))
                                 .padding(16.dp)
                         ) {
-                            AfterCheckRow(if (lang == Lang.KZ) "Жаңа зақым анықталмады" else "Новых повреждений не обнаружено")
-                            AfterCheckRow(if (lang == Lang.KZ) "Салон жағдайы өзгеріссіз" else "Состояние салона без изменений")
+                            AfterCheckRow(if (lang == Lang.KZ) "Соңғы фотофиксация сәтті аяқталды" else "Финальная фотофиксация успешно завершена")
+                            AfterCheckRow(if (lang == Lang.KZ) "Көлік тапсыруға дайын" else "Автомобиль готов к сдаче")
                         }
                         Column(
                             modifier = Modifier
@@ -202,32 +230,10 @@ fun InspectionAfterScreen(
         ) {
             PrimaryButton(
                 text = if (lang == Lang.KZ) "Бас бетке оралу" else "Вернуться на главную",
-                enabled = scanState == AfterScan.DONE,
+                enabled = photoUri != null,
                 onClick = onDone
             )
         }
-    }
-}
-
-@Composable
-private fun PhotoPlaceholder(label: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(4f / 3f)
-                .background(Surface1, RoundedCornerShape(14.dp))
-                .border(1.dp, BorderColor, RoundedCornerShape(14.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Filled.Image, contentDescription = null, tint = TextLow)
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.bodySmall,
-            color = TextMid,
-            modifier = Modifier.padding(top = 6.dp)
-        )
     }
 }
 

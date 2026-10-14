@@ -1,5 +1,6 @@
 package kz.smartcarshare.app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -98,24 +99,71 @@ fun RegisterScreen(
                 icon = Icons.Filled.DirectionsCar,
                 bg = Ice,
                 tint = Navy900,
-                sizeDp = 64
+                sizeDp = 68
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = Strings.get(lang, "app_title"),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineLarge,
                 color = TextHi,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Black
             )
 
             Text(
                 text = if (state.isLoginMode) Strings.get(lang, "login_title") else Strings.get(lang, "register_title"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextMid,
-                modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+                modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
             )
+
+            // Segmented Tab Control
+            Surface(
+                shape = RoundedCornerShape(100.dp),
+                color = Surface1,
+                border = BorderStroke(1.dp, BorderColor),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(if (state.isLoginMode) Amber else Surface1)
+                            .clickable { if (!state.isLoginMode) viewModel.toggleMode() }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = Strings.get(lang, "login_btn"),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (state.isLoginMode) AmberOnDark else TextHi
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(if (!state.isLoginMode) Amber else Surface1)
+                            .clickable { if (state.isLoginMode) viewModel.toggleMode() }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = Strings.get(lang, "register_btn"),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (!state.isLoginMode) AmberOnDark else TextHi
+                        )
+                    }
+                }
+            }
 
             if (!state.isLoginMode) {
                 Row(

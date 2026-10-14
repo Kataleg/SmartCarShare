@@ -1,24 +1,30 @@
 package kz.smartcarshare.app.ui.screens
 
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
+import coil.compose.AsyncImage
 import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.ui.components.*
 import kz.smartcarshare.app.ui.theme.*
-
-private enum class BeforeScan { IDLE, ANALYZING, DONE }
+import java.io.File
 
 @Composable
 fun InspectionBeforeScreen(
@@ -26,12 +32,18 @@ fun InspectionBeforeScreen(
     onBack: () -> Unit,
     onStartRental: () -> Unit
 ) {
-    var scanState by remember { mutableStateOf(BeforeScan.IDLE) }
+    val context = LocalContext.current
+    var photoUri by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(scanState) {
-        if (scanState == BeforeScan.ANALYZING) {
-            delay(1400)
-            scanState = BeforeScan.DONE
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            val file = File(context.filesDir, "before_inspection_${System.currentTimeMillis()}.jpg")
+            file.outputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            photoUri = Uri.fromFile(file).toString()
         }
     }
 
@@ -50,77 +62,95 @@ fun InspectionBeforeScreen(
             item {
                 Text(
                     text = if (lang == Lang.KZ)
-                        "Көлікті алар алдында суретке түсіріңіз — жасанды интеллект кузов пен салонның жағдайын автоматты тіркейді."
+                        "Көлікті алар алдында суретке түсіріңіз — кузов пен салонның жағдайы сақталады."
                     else
-                        "Сделайте фото автомобиля перед поездкой — искусственный интеллект автоматически зафиксирует состояние кузова и салона.",
+                        "Сделайте фото автомобиля перед поездкой — фотофиксация сохранится в системе.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextMid,
                     modifier = Modifier.padding(bottom = 14.dp)
                 )
             }
             item {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(4f / 3f)
+                        .clip(RoundedCornerShape(20.dp))
                         .background(Surface1, RoundedCornerShape(20.dp))
-                        .border(1.5.dp, BorderColor, RoundedCornerShape(20.dp)),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                        .border(1.5.dp, if (photoUri != null) Success else BorderColor, RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    when (scanState) {
-                        BeforeScan.IDLE -> {
-                            Icon(Icons.Filled.CameraAlt, contentDescription = null, tint = TextMid)
-                            Spacer(Modifier.height(8.dp))
+                    if (photoUri != null) {
+                        AsyncImage(
+                            model = photoUri,
+                            contentDescription = "Көлік суреті",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Surface(
+                            color = Success,
+                            shape = RoundedCornerShape(100.dp),
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = AmberOnDark, modifier = Modifier.size(16.dp))
+                                Text(
+                                    if (lang == Lang.KZ) "Сурет сақталды" else "Фото сохранено",
+                                    color = AmberOnDark,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    } else {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = Ice, modifier = Modifier.size(48.dp))
+                            Spacer(Modifier.height(10.dp))
                             Text(
-                                if (lang == Lang.KZ) "Камераға түсіру" else "Сделать фото",
+                                if (lang == Lang.KZ) "Камераға түсіру" else "Сделать фото на камеру",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = TextHi
                             )
                             Text(
-                                if (lang == Lang.KZ) "Машинаны 4 жағынан суретке түсіріңіз" else "Сфотографируйте авто с 4 сторон",
+                                if (lang == Lang.KZ) "Машинаны суретке түсіріңіз" else "Сфотографируйте автомобиль",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextLow
                             )
                         }
-                        BeforeScan.ANALYZING -> {
-                            CircularProgressIndicator(color = Ice)
-                            Spacer(Modifier.height(10.dp))
-                            Text(
-                                if (lang == Lang.KZ) "ЖИ талдап жатыр..." else "ИИ анализирует...",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Ice
-                            )
-                        }
-                        BeforeScan.DONE -> {
-                            Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Success)
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                if (lang == Lang.KZ) "Сурет сәтті тіркелді" else "Фото успешно зарегистрировано",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = TextHi
-                            )
-                        }
                     }
                 }
             }
             item {
-                if (scanState == BeforeScan.IDLE) {
-                    OutlinedButton(
-                        onClick = { scanState = BeforeScan.ANALYZING },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 14.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(Icons.Filled.CameraAlt, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (lang == Lang.KZ) "Суретке түсіру" else "Сделать фото", color = TextHi)
-                    }
+                Button(
+                    onClick = { cameraLauncher.launch(null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Ice, contentColor = Navy900)
+                ) {
+                    Icon(Icons.Filled.PhotoCamera, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (photoUri == null)
+                            (if (lang == Lang.KZ) "Камераны ашу және суретке түсіру" else "Открыть камеру и сделать фото")
+                        else
+                            (if (lang == Lang.KZ) "Қайта суретке түсіру" else "Переснять фото"),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
             item {
-                if (scanState == BeforeScan.DONE) {
+                if (photoUri != null) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -130,14 +160,12 @@ fun InspectionBeforeScreen(
                             .padding(16.dp)
                     ) {
                         Text(
-                            if (lang == Lang.KZ) "ЖИ ҚОРЫТЫНДЫСЫ" else "ЗАКЛЮЧЕНИЕ ИИ",
+                            if (lang == Lang.KZ) "ФОТОФИКСАЦИЯ НӘТИЖЕСІ" else "РЕЗУЛЬТАТ ФОТОФИКСАЦИИ",
                             style = MaterialTheme.typography.bodySmall,
                             color = Amber
                         )
-                        BeforeCheckRow(if (lang == Lang.KZ) "Кузовта зақым табылмады" else "Повреждений кузова не обнаружено")
-                        BeforeCheckRow(if (lang == Lang.KZ) "Дөңгелектер қалыпты күйде" else "Шины и колеса в норме")
-                        BeforeCheckRow(if (lang == Lang.KZ) "Салон таза, зақым жоқ" else "Салон чистый, без повреждений")
-                        BeforeCheckRow(if (lang == Lang.KZ) "Жанармай деңгейі: 78%" else "Уровень топлива: 78%")
+                        BeforeCheckRow(if (lang == Lang.KZ) "Көліктің бастапқы фотосы тіркелді" else "Начальное фото авто зафиксировано")
+                        BeforeCheckRow(if (lang == Lang.KZ) "Сапарды бастауға дайын" else "Готово к началу поездки")
                     }
                 }
             }
@@ -151,7 +179,7 @@ fun InspectionBeforeScreen(
         ) {
             PrimaryButton(
                 text = if (lang == Lang.KZ) "Жалдауды бастау" else "Начать аренду",
-                enabled = scanState == BeforeScan.DONE,
+                enabled = photoUri != null,
                 onClick = onStartRental
             )
         }

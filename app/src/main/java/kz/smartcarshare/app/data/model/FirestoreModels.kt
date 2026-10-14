@@ -20,3 +20,16 @@ data class FirestoreRental(
     val totalPrice: Int = 0,
     val status: String = "ACTIVE"
 )
+
+data class FirestoreCompany(
+    val id: String = "",
+    val name: String = "",
+    val legalName: String = "",
+    val description: String = "",
+    val logoUrl: String = "",
+    val rating: Double = 4.9,
+    val is247: Boolean = true,
+    val map2GisUrl: String = "",
+    val phones: List<Map<String, String>> = emptyList(),
+    val locations: List<Map<String, String>> = emptyList()
+)

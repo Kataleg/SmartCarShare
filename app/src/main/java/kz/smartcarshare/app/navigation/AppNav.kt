@@ -1,6 +1,9 @@
 package kz.smartcarshare.app.navigation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.DirectionsCar
@@ -9,6 +12,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -39,7 +43,7 @@ object Routes {
     fun detail(carId: Int) = "detail/$carId"
 }
 
-private val bottomBarRoutes = setOf(Routes.HOME, Routes.CHAT, Routes.PROFILE)
+private val bottomBarRoutes = setOf(Routes.HOME, Routes.CHAT, Routes.PROFILE, Routes.TRIPS, Routes.ACTIVE)
 
 @Composable
 fun SmartCarShareApp() {
@@ -82,41 +86,51 @@ fun SmartCarShareApp() {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (currentRoute in bottomBarRoutes) {
-                NavigationBar(containerColor = Surface1) {
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.HOME,
-                        onClick = { navController.navigate(Routes.HOME) { launchSingleTop = true } },
-                        icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                        label = { Text(Strings.get(vm.currentLang, "nav_home")) },
-                        colors = navColors
-                    )
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.CHAT,
-                        onClick = { navController.navigate(Routes.CHAT) { launchSingleTop = true } },
-                        icon = { Icon(Icons.Filled.Chat, contentDescription = null) },
-                        label = { Text(Strings.get(vm.currentLang, "nav_chat")) },
-                        colors = navColors
-                    )
-                    NavigationBarItem(
-                        selected = false,
-                        onClick = {
-                            if (vm.rentalActive) {
-                                navController.navigate(Routes.ACTIVE) { launchSingleTop = true }
-                            } else {
-                                navController.navigate(Routes.TRIPS) { launchSingleTop = true }
-                            }
-                        },
-                        icon = { Icon(Icons.Filled.DirectionsCar, contentDescription = null) },
-                        label = { Text(Strings.get(vm.currentLang, "nav_trips")) },
-                        colors = navColors
-                    )
-                    NavigationBarItem(
-                        selected = currentRoute == Routes.PROFILE,
-                        onClick = { navController.navigate(Routes.PROFILE) { launchSingleTop = true } },
-                        icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                        label = { Text(Strings.get(vm.currentLang, "nav_profile")) },
-                        colors = navColors
-                    )
+                Surface(
+                    shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+                    color = Surface1.copy(alpha = 0.84f),
+                    border = BorderStroke(1.dp, BorderLight.copy(alpha = 0.35f)),
+                    shadowElevation = 16.dp
+                ) {
+                    NavigationBar(
+                        containerColor = Color.Transparent,
+                        tonalElevation = 0.dp
+                    ) {
+                        NavigationBarItem(
+                            selected = currentRoute == Routes.HOME,
+                            onClick = { navController.navigate(Routes.HOME) { launchSingleTop = true } },
+                            icon = { Icon(Icons.Filled.Home, contentDescription = null) },
+                            label = { Text(Strings.get(vm.currentLang, "nav_home")) },
+                            colors = navColors
+                        )
+                        NavigationBarItem(
+                            selected = currentRoute == Routes.CHAT,
+                            onClick = { navController.navigate(Routes.CHAT) { launchSingleTop = true } },
+                            icon = { Icon(Icons.Filled.Chat, contentDescription = null) },
+                            label = { Text(Strings.get(vm.currentLang, "nav_chat")) },
+                            colors = navColors
+                        )
+                        NavigationBarItem(
+                            selected = currentRoute == Routes.ACTIVE || currentRoute == Routes.TRIPS,
+                            onClick = {
+                                if (vm.rentalActive) {
+                                    navController.navigate(Routes.ACTIVE) { launchSingleTop = true }
+                                } else {
+                                    navController.navigate(Routes.TRIPS) { launchSingleTop = true }
+                                }
+                            },
+                            icon = { Icon(Icons.Filled.DirectionsCar, contentDescription = null) },
+                            label = { Text(Strings.get(vm.currentLang, "nav_trips")) },
+                            colors = navColors
+                        )
+                        NavigationBarItem(
+                            selected = currentRoute == Routes.PROFILE,
+                            onClick = { navController.navigate(Routes.PROFILE) { launchSingleTop = true } },
+                            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                            label = { Text(Strings.get(vm.currentLang, "nav_profile")) },
+                            colors = navColors
+                        )
+                    }
                 }
             }
         }

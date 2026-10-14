@@ -7,14 +7,20 @@ import androidx.compose.runtime.Composable
 private val Scheme = darkColorScheme(
     primary = Amber,
     onPrimary = AmberOnDark,
+    primaryContainer = Surface2,
+    onPrimaryContainer = TextHi,
     secondary = Ice,
     onSecondary = Navy900,
+    secondaryContainer = Surface3,
+    onSecondaryContainer = Ice,
     background = Navy800,
     onBackground = TextHi,
     surface = Surface1,
     onSurface = TextHi,
     surfaceVariant = Surface2,
-    onSurfaceVariant = TextMid
+    onSurfaceVariant = TextMid,
+    outline = BorderColor,
+    outlineVariant = BorderLight
 )
 
 @Composable

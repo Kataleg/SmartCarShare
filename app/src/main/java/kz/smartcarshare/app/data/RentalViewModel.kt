@@ -12,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kz.smartcarshare.app.data.local.ActiveRentalStore
 import kz.smartcarshare.app.data.model.FirestoreRental
 import kz.smartcarshare.app.data.repository.FirestoreCompanyRepository
 import kz.smartcarshare.app.data.repository.FirestoreRentalRepository
@@ -23,11 +24,33 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
 
     private val rentalRepository = FirestoreRentalRepository(application)
     private val companyRepository = FirestoreCompanyRepository(application)
+    private val activeRentalStore = ActiveRentalStore(application)
+
+    private var rentalStartTimeMillis: Long = 0L
 
     init {
         viewModelScope.launch {
-            companyRepository.syncCompanyAndCarsToFirestore()
+            try {
+                companyRepository.syncCompanyAndCarsToFirestore()
+            } catch (_: Exception) {}
         }
+        try {
+            restoreActiveRental()
+        } catch (_: Exception) {}
+    }
+
+    private fun restoreActiveRental() {
+        try {
+            val activeState = activeRentalStore.getActiveRental()
+            if (activeState.isActive && activeState.startTimeMillis > 0) {
+                rentalActive = true
+                rentalStartTimeMillis = activeState.startTimeMillis
+                selectedCarId = activeState.carId
+                tariff = if (activeState.tariffName == "DAY") Tariff.DAY else Tariff.HOUR
+                activeRentalId = activeState.activeRentalId
+                startLiveTicker()
+            }
+        } catch (_: Exception) {}
     }
 
     private val customCars = mutableStateListOf<Car>()
@@ -313,34 +336,58 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun startRental(userId: String = "guest_user") {
-        elapsedSeconds = 0
         frozenFinalPrice = null
         rentalActive = true
-        timerJob?.cancel()
-        timerJob = viewModelScope.launch {
-            val car = selectedCar
-            if (car != null) {
+        rentalStartTimeMillis = System.currentTimeMillis()
+
+        val car = selectedCar
+        if (car != null) {
+            activeRentalStore.saveActiveRental(
+                startTimeMillis = rentalStartTimeMillis,
+                carId = car.id,
+                tariffName = tariff.name,
+                userId = userId,
+                activeRentalId = ""
+            )
+
+            viewModelScope.launch {
                 val firestoreRental = FirestoreRental(
                     userId = userId,
                     carId = car.id,
                     carName = car.name,
-                    startTime = System.currentTimeMillis(),
+                    startTime = rentalStartTimeMillis,
                     status = "ACTIVE"
                 )
                 val res = rentalRepository.saveRental(firestoreRental)
-                activeRentalId = res.getOrNull()
+                val id = res.getOrNull() ?: ""
+                activeRentalId = id
+                activeRentalStore.saveActiveRental(
+                    startTimeMillis = rentalStartTimeMillis,
+                    carId = car.id,
+                    tariffName = tariff.name,
+                    userId = userId,
+                    activeRentalId = id
+                )
                 loadUserData(userId)
             }
+        }
+        startLiveTicker()
+    }
 
-            while (true) {
+    private fun startLiveTicker() {
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            while (rentalActive) {
+                val now = System.currentTimeMillis()
+                if (rentalStartTimeMillis > 0 && now >= rentalStartTimeMillis) {
+                    elapsedSeconds = ((now - rentalStartTimeMillis) / 1000L).toInt()
+                }
                 delay(1000)
-                elapsedSeconds++
             }
         }
     }
 
     fun stopTripAccrual() {
-        timerJob?.cancel()
         if (frozenFinalPrice == null) {
             frozenFinalPrice = liveAccruedPrice()
         }
@@ -358,16 +405,19 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
     fun finishRental(userId: String = "guest_user") {
         stopTripAccrual()
         rentalActive = false
+        timerJob?.cancel()
+        activeRentalStore.clearActiveRental()
+
         val rId = activeRentalId
         val finalPrice = liveAccruedPrice()
         val car = selectedCar
 
         val completedRental = FirestoreRental(
-            id = rId ?: "rental_${System.currentTimeMillis()}",
+            id = if (!rId.isNullOrBlank()) rId else "rental_${System.currentTimeMillis()}",
             userId = userId,
             carId = car?.id ?: 0,
             carName = car?.name ?: "Көлік",
-            startTime = System.currentTimeMillis() - (elapsedSeconds * 1000L),
+            startTime = if (rentalStartTimeMillis > 0) rentalStartTimeMillis else System.currentTimeMillis() - (elapsedSeconds * 1000L),
             endTime = System.currentTimeMillis(),
             totalPrice = finalPrice,
             status = "FINISHED"
@@ -380,7 +430,7 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
             ownerEarnings[key] = current + finalPrice
         }
 
-        if (rId != null) {
+        if (!rId.isNullOrBlank()) {
             viewModelScope.launch {
                 try {
                     rentalRepository.finishRental(rId, finalPrice)
@@ -388,6 +438,8 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
                 } catch (_: Exception) {}
             }
         }
+
+        rentalStartTimeMillis = 0L
     }
 
     fun elapsedFormatted(): String {

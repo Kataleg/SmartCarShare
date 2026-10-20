@@ -81,6 +81,12 @@ fun SmartCarShareApp() {
         unselectedTextColor = TextLow
     )
 
+    val startDest = remember(currentUser, vm.rentalActive) {
+        if (vm.rentalActive) Routes.ACTIVE
+        else if (currentUser != null) Routes.HOME
+        else Routes.REGISTER
+    }
+
     Scaffold(
         containerColor = Navy800,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -137,7 +143,7 @@ fun SmartCarShareApp() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = if (currentUser != null) Routes.HOME else Routes.REGISTER,
+            startDestination = startDest,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Routes.REGISTER) {

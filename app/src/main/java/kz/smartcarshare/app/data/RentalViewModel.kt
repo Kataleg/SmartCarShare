@@ -375,13 +375,12 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         startLiveTicker()
     }
 
-    fun getEffectiveElapsedSeconds(): Int {
-        if (!rentalActive || rentalStartTimeMillis <= 0L) return elapsedSeconds
-        val now = System.currentTimeMillis()
-        return if (now >= rentalStartTimeMillis) {
-            ((now - rentalStartTimeMillis) / 1000L).toInt()
-        } else {
-            0
+    fun updateLiveTicker() {
+        if (rentalActive && rentalStartTimeMillis > 0L) {
+            val now = System.currentTimeMillis()
+            if (now >= rentalStartTimeMillis) {
+                elapsedSeconds = ((now - rentalStartTimeMillis) / 1000L).toInt()
+            }
         }
     }
 
@@ -389,7 +388,7 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (rentalActive) {
-                elapsedSeconds = getEffectiveElapsedSeconds()
+                updateLiveTicker()
                 delay(1000)
             }
         }
@@ -406,13 +405,13 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         if (frozen != null) return frozen
 
         val base = currentPrice()
-        val totalSec = getEffectiveElapsedSeconds()
+        val sec = elapsedSeconds
         val divisor = if (tariff == Tariff.HOUR) 3600.0 else 86400.0
-        return ((base / divisor) * totalSec).toInt()
+        return ((base / divisor) * sec).toInt()
     }
 
     fun finishRental(userId: String = "guest_user") {
-        val totalSec = getEffectiveElapsedSeconds()
+        updateLiveTicker()
         stopTripAccrual()
         rentalActive = false
         timerJob?.cancel()
@@ -421,6 +420,7 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         val rId = activeRentalId
         val finalPrice = liveAccruedPrice()
         val car = selectedCar
+        val totalSec = elapsedSeconds
 
         val completedRental = FirestoreRental(
             id = if (!rId.isNullOrBlank()) rId else "rental_${System.currentTimeMillis()}",
@@ -453,7 +453,7 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun elapsedFormatted(): String {
-        val totalSec = getEffectiveElapsedSeconds()
+        val totalSec = elapsedSeconds
         val hours = totalSec / 3600
         val mins = (totalSec % 3600) / 60
         val secs = totalSec % 60

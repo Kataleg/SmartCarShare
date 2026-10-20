@@ -8,12 +8,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.data.Tariff
@@ -28,6 +30,13 @@ fun ActiveRentalScreen(
 ) {
     val car = vm.selectedCar
     val lang = vm.currentLang
+
+    LaunchedEffect(vm.rentalActive) {
+        while (vm.rentalActive) {
+            vm.updateLiveTicker()
+            delay(1000)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(

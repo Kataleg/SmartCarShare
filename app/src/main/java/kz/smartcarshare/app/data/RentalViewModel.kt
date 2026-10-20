@@ -16,6 +16,7 @@ import kz.smartcarshare.app.data.local.ActiveRentalStore
 import kz.smartcarshare.app.data.model.FirestoreRental
 import kz.smartcarshare.app.data.repository.FirestoreCompanyRepository
 import kz.smartcarshare.app.data.repository.FirestoreRentalRepository
+import java.util.Locale
 
 enum class Tariff { HOUR, DAY }
 enum class SortOrder { NONE, PRICE_ASC, PRICE_DESC }
@@ -374,14 +375,21 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         startLiveTicker()
     }
 
+    fun getEffectiveElapsedSeconds(): Int {
+        if (!rentalActive || rentalStartTimeMillis <= 0L) return elapsedSeconds
+        val now = System.currentTimeMillis()
+        return if (now >= rentalStartTimeMillis) {
+            ((now - rentalStartTimeMillis) / 1000L).toInt()
+        } else {
+            0
+        }
+    }
+
     private fun startLiveTicker() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (rentalActive) {
-                val now = System.currentTimeMillis()
-                if (rentalStartTimeMillis > 0 && now >= rentalStartTimeMillis) {
-                    elapsedSeconds = ((now - rentalStartTimeMillis) / 1000L).toInt()
-                }
+                elapsedSeconds = getEffectiveElapsedSeconds()
                 delay(1000)
             }
         }
@@ -398,11 +406,13 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
         if (frozen != null) return frozen
 
         val base = currentPrice()
+        val totalSec = getEffectiveElapsedSeconds()
         val divisor = if (tariff == Tariff.HOUR) 3600.0 else 86400.0
-        return ((base / divisor) * 60.0 * elapsedSeconds).toInt()
+        return ((base / divisor) * totalSec).toInt()
     }
 
     fun finishRental(userId: String = "guest_user") {
+        val totalSec = getEffectiveElapsedSeconds()
         stopTripAccrual()
         rentalActive = false
         timerJob?.cancel()
@@ -417,7 +427,7 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
             userId = userId,
             carId = car?.id ?: 0,
             carName = car?.name ?: "Көлік",
-            startTime = if (rentalStartTimeMillis > 0) rentalStartTimeMillis else System.currentTimeMillis() - (elapsedSeconds * 1000L),
+            startTime = if (rentalStartTimeMillis > 0) rentalStartTimeMillis else System.currentTimeMillis() - (totalSec * 1000L),
             endTime = System.currentTimeMillis(),
             totalPrice = finalPrice,
             status = "FINISHED"
@@ -443,9 +453,16 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun elapsedFormatted(): String {
-        val m = (elapsedSeconds / 60).toString().padStart(2, '0')
-        val s = (elapsedSeconds % 60).toString().padStart(2, '0')
-        return "$m:$s"
+        val totalSec = getEffectiveElapsedSeconds()
+        val hours = totalSec / 3600
+        val mins = (totalSec % 3600) / 60
+        val secs = totalSec % 60
+
+        return if (hours > 0) {
+            String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, mins, secs)
+        } else {
+            String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
+        }
     }
 
     override fun onCleared() {

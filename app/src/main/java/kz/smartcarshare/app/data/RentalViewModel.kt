@@ -81,12 +81,21 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
     val companyFilterOptions: List<String>
         get() = listOf(allLabel) + CompanyData.allCompanies.map { it.name }
 
-    private fun matchesCompany(car: Car, comp: String): Boolean =
-        if (comp == "Барлығы" || comp == "Все") true
-        else car.company.contains(comp, ignoreCase = true) || comp.contains(car.company, ignoreCase = true)
+    private fun matchesCompany(car: Car, comp: String): Boolean {
+        if (comp == "Барлығы" || comp == "Все") return true
+        val cleanCarComp = car.company.replace(" ", "").lowercase()
+        val cleanSelectedComp = comp.replace(" ", "").lowercase()
+        return cleanCarComp.contains(cleanSelectedComp) ||
+               cleanSelectedComp.contains(cleanCarComp) ||
+               (cleanSelectedComp.contains("cashauto") && cleanCarComp.contains("cashauto")) ||
+               (cleanSelectedComp.contains("nurauto") && cleanCarComp.contains("nurauto")) ||
+               (cleanSelectedComp.contains("region") && cleanCarComp.contains("region")) ||
+               (cleanSelectedComp.contains("qazqar") && cleanCarComp.contains("qazqar")) ||
+               (cleanSelectedComp.contains("rvta") && cleanCarComp.contains("rvta"))
+    }
 
     private fun matchesCat(car: Car, cat: String): Boolean = when (cat) {
-        "CashAuto" -> car.company.contains("CashAuto", ignoreCase = true)
+        "CashAuto" -> car.company.replace(" ", "").contains("CashAuto", ignoreCase = true)
         "Мото" -> car.tags.contains("Мото")
         "Эконом" -> car.tags.contains("Эконом")
         "Кроссовер" -> car.tags.contains("Кроссовер")

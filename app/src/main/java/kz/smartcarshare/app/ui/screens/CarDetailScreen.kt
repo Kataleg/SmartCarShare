@@ -14,6 +14,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
@@ -56,6 +60,7 @@ fun CarDetailScreen(
     val car = vm.selectedCar ?: return
     val lang = vm.currentLang
     var isBranchesSheetVisible by remember { mutableStateOf(false) }
+    var isFullScreenImageOpen by remember { mutableStateOf(false) }
 
     val company = remember(car) {
         CompanyData.allCompanies.find { comp ->
@@ -106,7 +111,9 @@ fun CarDetailScreen(
                                 contentScale = ContentScale.Crop,
                                 error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
                                 placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { isFullScreenImageOpen = true }
                             )
                         }
 
@@ -460,6 +467,80 @@ fun CarDetailScreen(
                 }
 
                 Spacer(Modifier.height(20.dp))
+            }
+        }
+    }
+
+    if (isFullScreenImageOpen) {
+        val carImages = remember(car) { car.allImages.ifEmpty { listOf("") } }
+        val fullPagerState = rememberPagerState(initialPage = 0, pageCount = { carImages.size })
+        val context = LocalContext.current
+
+        Dialog(
+            onDismissRequest = { isFullScreenImageOpen = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.96f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (carImages.isNotEmpty() && carImages.first().isNotBlank()) {
+                    HorizontalPager(
+                        state = fullPagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(carImages[page])
+                                .crossfade(true)
+                                .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
+                                .build(),
+                            contentDescription = "${car.name} full photo ${page + 1}",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(vertical = 40.dp, horizontal = 12.dp)
+                        )
+                    }
+
+                    if (carImages.size > 1) {
+                        Surface(
+                            color = Surface1.copy(alpha = 0.85f),
+                            shape = RoundedCornerShape(100.dp),
+                            border = BorderStroke(1.dp, BorderColor),
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 28.dp)
+                        ) {
+                            Text(
+                                text = "${fullPagerState.currentPage + 1}/${carImages.size}",
+                                color = TextHi,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+
+                IconButton(
+                    onClick = { isFullScreenImageOpen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 40.dp, end = 20.dp)
+                        .size(44.dp)
+                        .background(Surface1.copy(alpha = 0.85f), CircleShape)
+                        .border(1.dp, BorderColor, CircleShape)
+                ) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = "Закрыть",
+                        tint = TextHi,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
     }

@@ -8,6 +8,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -29,6 +32,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.foundation.rememberScrollState
@@ -71,6 +75,10 @@ fun CarDetailScreen(
             contentPadding = PaddingValues(horizontal = 20.dp)
         ) {
             item {
+                val carImages = remember(car) { car.allImages.ifEmpty { listOf("") } }
+                val pagerState = rememberPagerState(pageCount = { carImages.size })
+                val context = LocalContext.current
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -83,20 +91,63 @@ fun CarDetailScreen(
                         .border(1.dp, BorderLight, RoundedCornerShape(26.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (car.displayImageUrl.isNotBlank()) {
-                        val context = LocalContext.current
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(car.displayImageUrl)
-                                .crossfade(true)
-                                .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
-                                .build(),
-                            contentDescription = car.name,
-                            contentScale = ContentScale.Crop,
-                            error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
-                            placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
+                    if (carImages.isNotEmpty() && carImages.first().isNotBlank()) {
+                        HorizontalPager(
+                            state = pagerState,
                             modifier = Modifier.fillMaxSize()
-                        )
+                        ) { page ->
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(carImages[page])
+                                    .crossfade(true)
+                                    .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
+                                    .build(),
+                                contentDescription = "${car.name} photo ${page + 1}",
+                                contentScale = ContentScale.Crop,
+                                error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
+                                placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+
+                        if (carImages.size > 1) {
+                            Surface(
+                                color = Surface1.copy(alpha = 0.75f),
+                                shape = RoundedCornerShape(100.dp),
+                                border = BorderStroke(1.dp, BorderColor),
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(12.dp)
+                            ) {
+                                Text(
+                                    text = "${pagerState.currentPage + 1}/${carImages.size}",
+                                    color = TextHi,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 12.dp)
+                                    .background(Surface1.copy(alpha = 0.65f), RoundedCornerShape(100.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                repeat(carImages.size) { iteration ->
+                                    val color = if (pagerState.currentPage == iteration) Amber else TextMid.copy(alpha = 0.5f)
+                                    Box(
+                                        modifier = Modifier
+                                            .size(if (pagerState.currentPage == iteration) 8.dp else 6.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                    )
+                                }
+                            }
+                        }
                     } else {
                         Icon(
                             imageVector = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,

@@ -15,16 +15,28 @@ data class Car(
     val isLux: Boolean = false,
     val ownerEmail: String = "",
     val ownerName: String = "",
-    val ownerKaspiNumber: String = "+7 (777) 999-11-12"
+    val ownerKaspiNumber: String = "+7 (777) 999-11-12",
+    val imageUrls: List<String> = emptyList()
 ) {
+    private fun formatSingleUrl(url: String): String {
+        if (url.isBlank()) return ""
+        if (url.contains("cashauto.kz/images/venicles/")) {
+            val fileName = url.substringAfter("cashauto.kz/images/venicles/")
+            return "https://cashauto.kz/uploads/uploads/images/cache/venicles/medium_default-$fileName"
+        }
+        return url
+    }
+
     val displayImageUrl: String
+        get() = formatSingleUrl(imageUrl)
+
+    val allImages: List<String>
         get() {
-            if (imageUrl.isBlank()) return ""
-            if (imageUrl.contains("cashauto.kz/images/venicles/")) {
-                val fileName = imageUrl.substringAfter("cashauto.kz/images/venicles/")
-                return "https://cashauto.kz/uploads/uploads/images/cache/venicles/medium_default-$fileName"
+            if (imageUrls.isNotEmpty()) {
+                return imageUrls.map { formatSingleUrl(it) }.filter { it.isNotBlank() }
             }
-            return imageUrl
+            val main = displayImageUrl
+            return if (main.isNotBlank()) listOf(main) else emptyList()
         }
 
     fun displaySeats(lang: Lang): String {

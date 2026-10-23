@@ -209,39 +209,34 @@ object CompanyData {
         )
     )
 
-    val rvtaClub = Company(
-        id = "rvta_club",
-        name = "Rvta club",
-        legalName = "Rvta club (Астана)",
-        description = "Премиальный автопрокат и каршеринг автомобилей в Астане. Комфортный сервис, быстрое бронирование и отличный выбор премиум-авто.",
+    val azvMotors = Company(
+        id = "azv_motors",
+        name = "AZV MOTORS",
+        legalName = "AZV MOTORS (Алматы)",
+        description = "Прокат и аренда автомобилей в Алматы от AZV MOTORS. Надежный сервис, широкий модельный ряд и выгодные условия.",
         logoUrl = "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=800",
-        websiteUrl = "https://rvtaclub.kz/",
-        rating = 4.92,
+        websiteUrl = "https://azvmotors.kz/",
+        rating = 4.90,
         is247 = true,
         phones = listOf(
             CompanyPhone(
-                number = "+7 (702) 777-15-15",
-                label = "Rvta club (Основной)",
+                number = "+7 (706) 607-00-06",
+                label = "AZV MOTORS (Основной)",
                 isPrimary = true
-            ),
-            CompanyPhone(
-                number = "+7 (707) 777-15-15",
-                label = "Диспетчер",
-                isPrimary = false
             )
         ),
         locations = listOf(
             CompanyLocation(
-                title = "Филиал Rvta club",
-                address = "Астана, Rvta club",
-                city = "Астана",
-                mapUrl = "https://go.2gis.com/HWQaK",
+                title = "Филиал AZV MOTORS",
+                address = "Алматы, AZV MOTORS",
+                city = "Алматы",
+                mapUrl = "https://2gis.kz/almaty/geo/70000001103541428",
                 isAirport = false
             )
         ),
-        map2GisUrl = "https://go.2gis.com/HWQaK",
-        additionalMapUrls = listOf("https://go.2gis.com/HWQaK"),
-        fleetCarIds = emptyList(),
+        map2GisUrl = "https://2gis.kz/almaty/geo/70000001103541428",
+        additionalMapUrls = listOf("https://2gis.kz/almaty/geo/70000001103541428"),
+        fleetCarIds = (93..162).toList(),
         tariffsInfo = listOf(
             CompanyTariffInfo(
                 name = "Почасовой",
@@ -258,7 +253,7 @@ object CompanyData {
 
     val cashAutoRentAstana = cashAutoRent
 
-    val allCompanies = listOf(cashAutoRent, nurAutoRent, regionRent, qazqar, rvtaClub)
+    val allCompanies = listOf(cashAutoRent, nurAutoRent, regionRent, qazqar, azvMotors)
 
     fun getCompanyById(id: String): Company? {
         return allCompanies.find { it.id == id }

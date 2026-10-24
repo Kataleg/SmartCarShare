@@ -251,9 +251,207 @@ object CompanyData {
         )
     )
 
+    val sodex = Company(
+        id = "sodex",
+        name = "Sodex",
+        legalName = "Sodex (Алматы)",
+        description = "Аренда и автопрокат комфортабельных автомобилей в Алматы от компании Sodex. Прозрачные условия и отличный выбор автомобилей.",
+        logoUrl = "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=800",
+        websiteUrl = "http://sodex.kz/",
+        rating = 4.89,
+        is247 = true,
+        phones = listOf(
+            CompanyPhone(
+                number = "+7 (701) 527-50-05",
+                label = "Sodex (Основной)",
+                isPrimary = true
+            ),
+            CompanyPhone(
+                number = "+7 (747) 527-50-05",
+                label = "Диспетчер",
+                isPrimary = false
+            ),
+            CompanyPhone(
+                number = "+7 (707) 700-81-61",
+                label = "Бронирование",
+                isPrimary = false
+            ),
+            CompanyPhone(
+                number = "+7 (701) 707-81-61",
+                label = "Поддержка",
+                isPrimary = false
+            )
+        ),
+        locations = listOf(
+            CompanyLocation(
+                title = "Филиал Sodex",
+                address = "Алматы, Sodex",
+                city = "Алматы",
+                mapUrl = "https://2gis.kz/almaty/geo/70000001040231623",
+                isAirport = false
+            )
+        ),
+        map2GisUrl = "https://2gis.kz/almaty/geo/70000001040231623",
+        additionalMapUrls = listOf("https://2gis.kz/almaty/geo/70000001040231623"),
+        fleetCarIds = listOf(163, 164, 165, 166, 167, 168),
+        tariffsInfo = listOf(
+            CompanyTariffInfo(
+                name = "Почасовой",
+                description = "Аренда от 2 000 ₸/час",
+                minPriceTenge = 2000
+            ),
+            CompanyTariffInfo(
+                name = "Суточный",
+                description = "Суточная аренда от 15 000 ₸/сутки",
+                minPriceTenge = 15000
+            )
+        )
+    )
+
+    val rentCarsKz = Company(
+        id = "rent_cars_kz",
+        name = "Rent Cars Kz",
+        legalName = "Rent Cars Kz (Алматы)",
+        description = "Аренда и автопрокат автомобилей любого класса в Алматы от компании Rent Cars Kz. Качественные автомобили и выгодные цены.",
+        logoUrl = "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=800",
+        websiteUrl = "http://rent-cars.kz/",
+        rating = 4.91,
+        is247 = true,
+        phones = listOf(
+            CompanyPhone(
+                number = "+7 (707) 834-40-75",
+                label = "Rent Cars Kz (Основной)",
+                isPrimary = true
+            ),
+            CompanyPhone(
+                number = "+7 (707) 834-40-76",
+                label = "Диспетчер",
+                isPrimary = false
+            )
+        ),
+        locations = listOf(
+            CompanyLocation(
+                title = "Филиал Rent Cars Kz",
+                address = "Алматы, Rent Cars Kz",
+                city = "Алматы",
+                mapUrl = "https://2gis.kz/almaty/geo/70000001026536568",
+                isAirport = false
+            )
+        ),
+        map2GisUrl = "https://2gis.kz/almaty/geo/70000001026536568",
+        additionalMapUrls = listOf("https://2gis.kz/almaty/geo/70000001026536568"),
+        fleetCarIds = (169..182).toList(),
+        tariffsInfo = listOf(
+            CompanyTariffInfo(
+                name = "Почасовой",
+                description = "Аренда от 2 000 ₸/час",
+                minPriceTenge = 2000
+            ),
+            CompanyTariffInfo(
+                name = "Суточный",
+                description = "Суточная аренда от 15 000 ₸/сутки",
+                minPriceTenge = 15000
+            )
+        )
+    )
+
+    val kazprokat = Company(
+        id = "kazprokat",
+        name = "Kazprokat",
+        legalName = "Kazprokat (Алматы)",
+        description = "Автопрокат и аренда автомобилей в Алматы от компании Kazprokat. Надежные машины, прозрачные условия и отличный сервис.",
+        logoUrl = "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=800",
+        websiteUrl = "http://www.kazprokat.kz/",
+        rating = 4.88,
+        is247 = true,
+        phones = listOf(
+            CompanyPhone(
+                number = "+7 (777) 888-08-88",
+                label = "Kazprokat (Основной)",
+                isPrimary = true
+            ),
+            CompanyPhone(
+                number = "+7 (707) 773-77-73",
+                label = "Диспетчер",
+                isPrimary = false
+            )
+        ),
+        locations = listOf(
+            CompanyLocation(
+                title = "Филиал Kazprokat",
+                address = "Алматы, Kazprokat",
+                city = "Алматы",
+                mapUrl = "https://2gis.kz/almaty/geo/9429940001203296",
+                isAirport = false
+            )
+        ),
+        map2GisUrl = "https://2gis.kz/almaty/geo/9429940001203296",
+        additionalMapUrls = listOf("https://2gis.kz/almaty/geo/9429940001203296"),
+        fleetCarIds = (183..199).toList(),
+        tariffsInfo = listOf(
+            CompanyTariffInfo(
+                name = "Почасовой",
+                description = "Аренда от 2 000 ₸/час",
+                minPriceTenge = 2000
+            ),
+            CompanyTariffInfo(
+                name = "Суточный",
+                description = "Суточная аренда от 15 000 ₸/сутки",
+                minPriceTenge = 15000
+            )
+        )
+    )
+
+    val silkWayCarRent = Company(
+        id = "silk_way_car_rent",
+        name = "Silk Way Car Rent",
+        legalName = "Silk Way Car Rent (Алматы)",
+        description = "Аренда и автопрокат премиальных и комфортабельных автомобилей в Алматы от Silk Way Car Rent. Комфортный сервис и гибкие условия.",
+        logoUrl = "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=800",
+        websiteUrl = "http://www.silkway-carrent.kz/",
+        rating = 4.90,
+        is247 = true,
+        phones = listOf(
+            CompanyPhone(
+                number = "+7 (747) 301-72-70",
+                label = "Silk Way (Основной)",
+                isPrimary = true
+            ),
+            CompanyPhone(
+                number = "+7 (707) 711-22-33",
+                label = "Диспетчер",
+                isPrimary = false
+            )
+        ),
+        locations = listOf(
+            CompanyLocation(
+                title = "Филиал Silk Way Car Rent",
+                address = "Алматы, Silk Way Car Rent",
+                city = "Алматы",
+                mapUrl = "https://2gis.kz/almaty/geo/70000001077509396",
+                isAirport = false
+            )
+        ),
+        map2GisUrl = "https://2gis.kz/almaty/geo/70000001077509396",
+        additionalMapUrls = listOf("https://2gis.kz/almaty/geo/70000001077509396"),
+        fleetCarIds = (200..225).toList(),
+        tariffsInfo = listOf(
+            CompanyTariffInfo(
+                name = "Почасовой",
+                description = "Аренда от 2 000 ₸/час",
+                minPriceTenge = 2000
+            ),
+            CompanyTariffInfo(
+                name = "Суточный",
+                description = "Суточная аренда от 15 000 ₸/сутки",
+                minPriceTenge = 15000
+            )
+        )
+    )
+
     val cashAutoRentAstana = cashAutoRent
 
-    val allCompanies = listOf(cashAutoRent, nurAutoRent, regionRent, qazqar, azvMotors)
+    val allCompanies = listOf(cashAutoRent, nurAutoRent, regionRent, qazqar, azvMotors, sodex, rentCarsKz, kazprokat, silkWayCarRent)
 
     fun getCompanyById(id: String): Company? {
         return allCompanies.find { it.id == id }

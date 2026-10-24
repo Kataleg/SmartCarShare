@@ -520,10 +520,12 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
                                 .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
                                 .build(),
                             contentDescription = car.name,
-                            contentScale = ContentScale.Crop,
+                            contentScale = ContentScale.Fit,
                             error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
                             placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(2.dp)
                         )
                     } else {
                         IconBadge(

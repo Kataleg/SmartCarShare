@@ -108,11 +108,12 @@ fun CarDetailScreen(
                                     .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
                                     .build(),
                                 contentDescription = "${car.name} photo ${page + 1}",
-                                contentScale = ContentScale.Crop,
+                                contentScale = ContentScale.Fit,
                                 error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
                                 placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
                                 modifier = Modifier
                                     .fillMaxSize()
+                                    .padding(4.dp)
                                     .clickable { isFullScreenImageOpen = true }
                             )
                         }

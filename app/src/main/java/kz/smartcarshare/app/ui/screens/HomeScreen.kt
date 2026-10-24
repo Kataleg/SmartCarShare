@@ -506,10 +506,10 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(width = 88.dp, height = 64.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .size(width = 92.dp, height = 64.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(Surface2)
-                        .border(1.dp, BorderColor, RoundedCornerShape(14.dp)),
+                        .border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (car.displayImageUrl.isNotBlank()) {
@@ -520,12 +520,10 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
                                 .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
                                 .build(),
                             contentDescription = car.name,
-                            contentScale = ContentScale.Fit,
+                            contentScale = ContentScale.Crop,
                             error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
                             placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(2.dp)
+                            modifier = Modifier.fillMaxSize()
                         )
                     } else {
                         IconBadge(

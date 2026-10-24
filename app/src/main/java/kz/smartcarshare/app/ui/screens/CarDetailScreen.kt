@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -87,13 +86,10 @@ fun CarDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(220.dp)
-                        .clip(RoundedCornerShape(26.dp))
-                        .background(
-                            Brush.linearGradient(listOf(Surface1, Ice.copy(alpha = 0.18f))),
-                            RoundedCornerShape(26.dp)
-                        )
-                        .border(1.dp, BorderLight, RoundedCornerShape(26.dp)),
+                        .aspectRatio(16f / 10f)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(Surface2)
+                        .border(1.dp, BorderLight, RoundedCornerShape(22.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (carImages.isNotEmpty() && carImages.first().isNotBlank()) {
@@ -108,12 +104,11 @@ fun CarDetailScreen(
                                     .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android)")
                                     .build(),
                                 contentDescription = "${car.name} photo ${page + 1}",
-                                contentScale = ContentScale.Fit,
+                                contentScale = ContentScale.Crop,
                                 error = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
                                 placeholder = rememberVectorPainter(if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar),
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(4.dp)
                                     .clickable { isFullScreenImageOpen = true }
                             )
                         }

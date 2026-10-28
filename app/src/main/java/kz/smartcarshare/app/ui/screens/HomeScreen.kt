@@ -489,10 +489,10 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
         shape = RoundedCornerShape(22.dp),
         color = Surface1,
         border = BorderStroke(1.dp, BorderColor),
-        shadowElevation = 3.dp,
+        shadowElevation = 4.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp)
+            .padding(bottom = 14.dp)
     ) {
         Column(
             modifier = Modifier
@@ -502,14 +502,18 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(width = 92.dp, height = 64.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Surface2)
-                        .border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
+                        .size(width = 104.dp, height = 72.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Surface2, Surface3)
+                            )
+                        )
+                        .border(1.dp, BorderColor, RoundedCornerShape(14.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (car.displayImageUrl.isNotBlank()) {
@@ -530,7 +534,7 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
                             icon = if (car.isLux) Icons.Filled.Star else Icons.Filled.DirectionsCar,
                             bg = Ice.copy(alpha = 0.2f),
                             tint = Ice,
-                            sizeDp = 42
+                            sizeDp = 44
                         )
                     }
 
@@ -538,17 +542,28 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
-                                .padding(4.dp)
+                                .padding(5.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Amber)
-                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                                .background(Brush.horizontalGradient(listOf(Amber, AmberGradientEnd)))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text(
-                                text = "LUX",
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Black,
-                                color = AmberOnDark
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = AmberOnDark,
+                                    modifier = Modifier.size(10.dp)
+                                )
+                                Text(
+                                    text = "LUX",
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = AmberOnDark
+                                )
+                            }
                         }
                     }
                 }
@@ -570,6 +585,38 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp)
                     )
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Ice.copy(alpha = 0.12f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = car.displayTransmission(lang),
+                                fontSize = 10.sp,
+                                color = Ice,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(ElectricIndigo.copy(alpha = 0.14f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = car.displayFuel(lang),
+                                fontSize = 10.sp,
+                                color = ElectricIndigo,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
@@ -581,13 +628,21 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
                     )
                     Text(
                         text = if (lang == Lang.KZ) "/ сағат" else "/ час",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelSmall,
                         color = TextMid
                     )
+                    if (car.pricePerDay != null) {
+                        Text(
+                            text = "${formatTenge(car.pricePerDay)} ${if (lang == Lang.KZ) "/ тәулік" else "/ сут"}",
+                            fontSize = 10.sp,
+                            color = TextLow,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -607,18 +662,18 @@ private fun CarRow(car: Car, lang: Lang, onClick: () -> Unit) {
 
                 Spacer(Modifier.width(8.dp))
 
-                Surface(
-                    onClick = onClick,
-                    color = Amber,
-                    shape = RoundedCornerShape(100.dp),
-                    shadowElevation = 2.dp
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(Brush.horizontalGradient(listOf(Amber, AmberGradientEnd)))
+                        .clickable { onClick() }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = if (lang == Lang.KZ) "Брондау" else "Забронировать",
                         color = AmberOnDark,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
                 }
             }

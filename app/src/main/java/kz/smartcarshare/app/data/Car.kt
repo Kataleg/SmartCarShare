@@ -16,7 +16,15 @@ data class Car(
     val ownerEmail: String = "",
     val ownerName: String = "",
     val ownerKaspiNumber: String = "+7 (777) 999-11-12",
-    val imageUrls: List<String> = emptyList()
+    val imageUrls: List<String> = emptyList(),
+    val year: Int = 2023,
+    val engineCapacity: String = "",
+    val powerHp: String = "",
+    val driveType: String = "",
+    val fuelConsumption: String = "",
+    val bodyType: String = "",
+    val color: String = "",
+    val depositTenge: Int = 0
 ) {
     private fun formatSingleUrl(url: String): String {
         if (url.isBlank()) return ""
@@ -68,6 +76,140 @@ data class Car(
             else -> fuel
         }
     }
+
+    val displayYear: Int
+        get() {
+            if (year != 2023) return year
+            val yearFromTags = tags.firstOrNull { it.matches(Regex("20[012]\\d")) }?.toIntOrNull()
+            if (yearFromTags != null) return yearFromTags
+            val yearFromName = Regex("20[012]\\d").find(name)?.value?.toIntOrNull()
+            return yearFromName ?: 2023
+        }
+
+    val displayEngineCapacity: String
+        get() {
+            if (engineCapacity.isNotBlank()) return engineCapacity
+            val lower = name.lowercase()
+            return when {
+                lower.contains("g63") || lower.contains("g550") -> "4.0 л Biturbo"
+                lower.contains("maybach") || lower.contains("s580") -> "4.0 л V8"
+                lower.contains("e63") || lower.contains("rs6") || lower.contains("rs7") || lower.contains("rsq8") -> "4.0 л V8"
+                lower.contains("panamera") || lower.contains("cayenne") -> "3.0 л V6"
+                lower.contains("lx 600") || lower.contains("lc 300") -> "3.5 л Twin-Turbo"
+                lower.contains("escalade") || lower.contains("corvette") -> "6.2 л V8"
+                lower.contains("hellcat") -> "6.2 л V8 Supercharged"
+                lower.contains("scat pack") -> "6.4 л V8"
+                lower.contains("mustang") || lower.contains("camaro") -> "2.3 л Турбо"
+                lower.contains("lc 200") || lower.contains("patrol") -> "5.6 л V8"
+                lower.contains("prado 4.0") -> "4.0 л V6"
+                lower.contains("prado 2.7") || lower.contains("fortuner") || lower.contains("lc prado") -> "2.7 л"
+                lower.contains("camry 80") || lower.contains("camry 75") || lower.contains("camry 70") || lower.contains("tucson 2.5") -> "2.5 л"
+                lower.contains("m5") || lower.contains("m4") || lower.contains("x5m") || lower.contains("x6m") || lower.contains("x7") -> "4.4 л V8"
+                lower.contains("zeekr") || lower.contains("taycan") || lower.contains("byd han") || lower.contains("id.4") || lower.contains("e:ns1") -> "Электропривод"
+                lower.contains("l9") || lower.contains("l8") || lower.contains("l7") || lower.contains("l6") || lower.contains("song plus") -> "1.5 л Турбо-Гибрид"
+                lower.contains("elantra") || lower.contains("creta") || lower.contains("sonata 2.0") -> "2.0 л"
+                lower.contains("accent") || lower.contains("solaris") || lower.contains("rio") || lower.contains("cobalt") || lower.contains("polo") || lower.contains("rapid") -> "1.6 л"
+                lower.contains("bayon") || lower.contains("baleno") -> "1.4 л"
+                lower.contains("atlas") || lower.contains("coolray") || lower.contains("omoda") || lower.contains("mufasa") -> "1.5 л Турбо"
+                lower.contains("leopard") -> "Электро-Гибрид 1.5T"
+                else -> "2.0 л"
+            }
+        }
+
+    val displayPowerHp: String
+        get() {
+            if (powerHp.isNotBlank()) return powerHp
+            val lower = name.lowercase()
+            return when {
+                lower.contains("hellcat") -> "717 л.с."
+                lower.contains("corvette") -> "495 л.с."
+                lower.contains("g63") -> "585 л.с."
+                lower.contains("taycan") || lower.contains("zeekr 001 fr") -> "761 л.с."
+                lower.contains("maybach") || lower.contains("s580") -> "503 л.с."
+                lower.contains("m5") || lower.contains("x5m") || lower.contains("x6m") -> "625 л.с."
+                lower.contains("m4") -> "510 л.с."
+                lower.contains("e63") || lower.contains("rs6") || lower.contains("rs7") || lower.contains("rsq8") -> "600 л.с."
+                lower.contains("l9") || lower.contains("l8") || lower.contains("l7") -> "449 л.с."
+                lower.contains("zeekr 001") || lower.contains("zeekr 009") || lower.contains("yangwang") -> "544 л.с."
+                lower.contains("lx 600") || lower.contains("lc 300") -> "415 л.с."
+                lower.contains("escalade") -> "426 л.с."
+                lower.contains("camaro") || lower.contains("mustang") -> "310 л.с."
+                lower.contains("camry 80") -> "206 л.с."
+                lower.contains("camry 75") || lower.contains("camry 70") -> "181 л.с."
+                lower.contains("lc 200") || lower.contains("patrol") -> "381 л.с."
+                lower.contains("prado 4.0") -> "249 л.с."
+                lower.contains("prado 2.7") || lower.contains("fortuner") -> "166 л.с."
+                lower.contains("tucson") || lower.contains("sportage") || lower.contains("sonata") || lower.contains("k5") -> "180 л.с."
+                lower.contains("creta") || lower.contains("mufasa") || lower.contains("bayon") -> "150 л.с."
+                lower.contains("elantra") -> "128 л.с."
+                lower.contains("accent") || lower.contains("solaris") || lower.contains("rio") || lower.contains("cobalt") || lower.contains("polo") -> "123 л.с."
+                else -> "150 л.с."
+            }
+        }
+
+    val displayDriveType: String
+        get() {
+            if (driveType.isNotBlank()) return driveType
+            val lower = name.lowercase()
+            return when {
+                tags.contains("4WD") || lower.contains("4wd") || lower.contains("xdrive") || lower.contains("quattro") ||
+                lower.contains("g63") || lower.contains("g550") || lower.contains("lc") || lower.contains("prado") || lower.contains("patrol") ||
+                lower.contains("l9") || lower.contains("l8") || lower.contains("l7") || lower.contains("zeekr 001") ||
+                lower.contains("gls") || lower.contains("gle") || lower.contains("x5m") || lower.contains("x6m") || lower.contains("x7") ||
+                lower.contains("pajero") || lower.contains("fortuner") || lower.contains("pathfinder") || lower.contains("escalade") -> "Полный (4WD / AWD)"
+                lower.contains("mustang") || lower.contains("camaro") || lower.contains("corvette") || lower.contains("m5") || lower.contains("m4") -> "Задний (RWD)"
+                else -> "Передний (FWD)"
+            }
+        }
+
+    val displayFuelConsumption: String
+        get() {
+            if (fuelConsumption.isNotBlank()) return fuelConsumption
+            val lower = name.lowercase()
+            return when {
+                lower.contains("zeekr") || lower.contains("taycan") || lower.contains("byd han") || lower.contains("id.4") || lower.contains("e:ns1") -> "18.5 кВтч / 100 км"
+                lower.contains("l9") || lower.contains("l8") || lower.contains("l7") || lower.contains("l6") || lower.contains("song plus") -> "7.8 л / 100 км (Гибрид)"
+                lower.contains("g63") || lower.contains("escalade") || lower.contains("hellcat") || lower.contains("lc 200") -> "14.5 л / 100 км"
+                lower.contains("lc 300") || lower.contains("prado") || lower.contains("lx 600") || lower.contains("m5") || lower.contains("x7") -> "11.8 л / 100 км"
+                lower.contains("camry") || lower.contains("sonata") || lower.contains("k5") || lower.contains("tucson") || lower.contains("sportage") -> "7.8 л / 100 км"
+                lower.contains("accent") || lower.contains("solaris") || lower.contains("rio") || lower.contains("cobalt") || lower.contains("polo") || lower.contains("rapid") -> "6.5 л / 100 км"
+                else -> "8.2 л / 100 км"
+            }
+        }
+
+    val displayBodyType: String
+        get() {
+            if (bodyType.isNotBlank()) return bodyType
+            val lower = name.lowercase()
+            return when {
+                tags.contains("Внедорожник") || lower.contains("g63") || lower.contains("prado") || lower.contains("lc") || lower.contains("patrol") || lower.contains("fortuner") || lower.contains("escalade") || lower.contains("pajero") -> "Внедорожник"
+                tags.contains("Кроссовер") || lower.contains("tucson") || lower.contains("creta") || lower.contains("rav4") || lower.contains("sportage") || lower.contains("mufasa") || lower.contains("coolray") || lower.contains("atlas") || lower.contains("omoda") || lower.contains("l9") || lower.contains("l8") || lower.contains("l7") || lower.contains("zeekr 001") -> "Кроссовер"
+                tags.contains("Минивэн") || lower.contains("staria") || lower.contains("custin") || lower.contains("carnival") || lower.contains("zeekr 009") -> "Минивэн"
+                tags.contains("Купе") || lower.contains("m4") || lower.contains("challenger") -> "Купе"
+                tags.contains("Кабриолет") || lower.contains("convertible") || lower.contains("corvette") -> "Кабриолет"
+                tags.contains("Хэтчбек") || lower.contains("baleno") -> "Хэтчбек"
+                else -> "Седан"
+            }
+        }
+
+    val displayColor: String
+        get() {
+            if (color.isNotBlank()) return color
+            val lower = name.lowercase()
+            return when {
+                lower.contains("white") || lower.contains("белый") -> "Белый перламутр"
+                lower.contains("red") || lower.contains("красный") -> "Красный металлик"
+                lower.contains("silver") || lower.contains("серебристый") -> "Серебристый"
+                lower.contains("blue") || lower.contains("синий") -> "Синий глубокий"
+                else -> "Черный металлик"
+            }
+        }
+
+    val displayDeposit: String
+        get() {
+            if (depositTenge > 0) return "$depositTenge ₸"
+            return if (isLux) "50 000 ₸" else "0 ₸ (Без залога)"
+        }
 }
 
 val sampleCars = listOf(

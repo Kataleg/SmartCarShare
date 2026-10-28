@@ -294,11 +294,13 @@ fun CarDetailScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(Modifier.height(12.dp))
+
+                    // Row 1: Seats & Transmission
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        SpecItem(Strings.get(lang, "seats"), car.displaySeats(lang), Modifier.weight(1f))
+                        SpecItem(if (lang == Lang.KZ) "Орын саны" else "Мест", car.displaySeats(lang), Modifier.weight(1f))
                         Box(
                             modifier = Modifier
                                 .width(1.dp)
@@ -306,25 +308,22 @@ fun CarDetailScreen(
                                 .background(BorderColor)
                         )
                         SpecItem(
-                            Strings.get(lang, "transmission"),
+                            if (lang == Lang.KZ) "Беріліс қорабы" else "КПП",
                             car.displayTransmission(lang),
                             Modifier
                                 .weight(1f)
                                 .padding(start = 14.dp)
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp)
-                            .height(1.dp)
-                            .background(BorderColor)
-                    )
+
+                    DividerLine()
+
+                    // Row 2: Engine/Fuel & Drive Type
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        SpecItem(Strings.get(lang, "fuel"), car.displayFuel(lang), Modifier.weight(1f))
+                        SpecItem(if (lang == Lang.KZ) "Отын / Қозғалтқыш" else "Топливо / Двигатель", car.displayFuel(lang), Modifier.weight(1f))
                         Box(
                             modifier = Modifier
                                 .width(1.dp)
@@ -332,8 +331,77 @@ fun CarDetailScreen(
                                 .background(BorderColor)
                         )
                         SpecItem(
-                            Strings.get(lang, "category"),
-                            if (car.isLux) "Lux" else "Standard",
+                            if (lang == Lang.KZ) "Привод" else "Привод",
+                            car.displayDriveType,
+                            Modifier
+                                .weight(1f)
+                                .padding(start = 14.dp)
+                        )
+                    }
+
+                    DividerLine()
+
+                    // Row 3: Engine Capacity & Power HP
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SpecItem(if (lang == Lang.KZ) "Қозғалтқыш көлемі" else "Объем двигателя", car.displayEngineCapacity, Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(36.dp)
+                                .background(BorderColor)
+                        )
+                        SpecItem(
+                            if (lang == Lang.KZ) "Қуаты" else "Мощность",
+                            car.displayPowerHp,
+                            Modifier
+                                .weight(1f)
+                                .padding(start = 14.dp)
+                        )
+                    }
+
+                    DividerLine()
+
+                    // Row 4: Fuel Consumption & Deposit
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SpecItem(if (lang == Lang.KZ) "Отын шығыны" else "Расход топлива", car.displayFuelConsumption, Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(36.dp)
+                                .background(BorderColor)
+                        )
+                        SpecItem(
+                            if (lang == Lang.KZ) "Кепіл" else "Залог / Депозит",
+                            car.displayDeposit,
+                            Modifier
+                                .weight(1f)
+                                .padding(start = 14.dp)
+                        )
+                    }
+
+                    DividerLine()
+
+                    // Row 5: Body Type & Color
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SpecItem(if (lang == Lang.KZ) "Шасси түрі" else "Кузов", car.displayBodyType, Modifier.weight(1f))
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(36.dp)
+                                .background(BorderColor)
+                        )
+                        SpecItem(
+                            if (lang == Lang.KZ) "Түсі" else "Цвет кузова",
+                            car.displayColor,
                             Modifier
                                 .weight(1f)
                                 .padding(start = 14.dp)
@@ -540,6 +608,17 @@ fun CarDetailScreen(
             }
         }
     }
+}
+
+@Composable
+private fun DividerLine() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp)
+            .height(1.dp)
+            .background(BorderColor)
+    )
 }
 
 @Composable

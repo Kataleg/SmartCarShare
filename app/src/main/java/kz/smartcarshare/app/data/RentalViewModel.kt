@@ -215,9 +215,55 @@ class RentalViewModel(application: Application) : AndroidViewModel(application) 
 
     fun getOwnerEarnings(email: String): Int = ownerEarnings[email.trim().lowercase()] ?: 0
 
+    val favoriteCarIds = mutableStateListOf<Int>()
+
+    val favoriteCars: List<Car>
+        get() = cars.filter { favoriteCarIds.contains(it.id) }
+
+    fun isFavorite(carId: Int): Boolean = favoriteCarIds.contains(carId)
+
+    fun toggleFavorite(carId: Int, userId: String = "guest_user") {
+        if (favoriteCarIds.contains(carId)) {
+            favoriteCarIds.remove(carId)
+        } else {
+            favoriteCarIds.add(carId)
+        }
+        syncFavoritesToFirestore(userId)
+    }
+
+    private fun syncFavoritesToFirestore(userId: String) {
+        val uKey = if (userId.isBlank()) "guest_user" else userId.replace("[^a-zA-Z0-9_@.]".toRegex(), "_")
+        viewModelScope.launch {
+            try {
+                val db = FirebaseFirestore.getInstance()
+                db.collection("favorites").document("user_$uKey")
+                    .set(mapOf("carIds" to favoriteCarIds.toList()))
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun loadFavorites(userId: String = "guest_user") {
+        val uKey = if (userId.isBlank()) "guest_user" else userId.replace("[^a-zA-Z0-9_@.]".toRegex(), "_")
+        viewModelScope.launch {
+            try {
+                val db = FirebaseFirestore.getInstance()
+                db.collection("favorites").document("user_$uKey")
+                    .get()
+                    .addOnSuccessListener { doc ->
+                        if (doc.exists()) {
+                            val list = (doc.get("carIds") as? List<*>)?.mapNotNull { (it as? Long)?.toInt() } ?: emptyList()
+                            favoriteCarIds.clear()
+                            favoriteCarIds.addAll(list)
+                        }
+                    }
+            } catch (_: Exception) {}
+        }
+    }
+
     fun loadUserData(userId: String) {
         if (userId.isBlank()) return
         loadTripHistory(userId)
+        loadFavorites(userId)
     }
 
     fun loadTripHistory(userId: String) {

@@ -39,9 +39,9 @@ fun PrimaryButton(
         contentPadding = PaddingValues(vertical = 14.dp, horizontal = 20.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Amber,
-            contentColor = AmberOnDark,
+            contentColor = Color.White,
             disabledContainerColor = Amber.copy(alpha = 0.3f),
-            disabledContentColor = AmberOnDark.copy(alpha = 0.5f)
+            disabledContentColor = Color.White.copy(alpha = 0.5f)
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 6.dp)
     ) {
@@ -69,7 +69,7 @@ fun OutlineActionButton(
         contentPadding = PaddingValues(vertical = 14.dp, horizontal = 20.dp),
         border = BorderStroke(1.dp, BorderColor),
         colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = Surface2.copy(alpha = 0.4f),
+            containerColor = Surface1,
             contentColor = TextHi
         )
     ) {
@@ -132,7 +132,7 @@ fun Chip(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(100.dp))
-            .background(if (accent) Ice.copy(alpha = 0.16f) else Surface2)
+            .background(if (accent) Ice.copy(alpha = 0.12f) else Surface2)
             .border(
                 1.dp,
                 if (accent) Ice.copy(alpha = 0.35f) else BorderColor,
@@ -155,8 +155,8 @@ fun Chip(
 fun IconBadge(
     icon: ImageVector,
     modifier: Modifier = Modifier,
-    bg: Color = Ice,
-    tint: Color = Color(0xFF0B0D28),
+    bg: Color = Ice.copy(alpha = 0.12f),
+    tint: Color = Ice,
     sizeDp: Int = 54
 ) {
     Box(
@@ -164,7 +164,7 @@ fun IconBadge(
             .size(sizeDp.dp)
             .clip(RoundedCornerShape((sizeDp * 0.28f).dp))
             .background(bg)
-            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape((sizeDp * 0.28f).dp)),
+            .border(1.dp, BorderColor, RoundedCornerShape((sizeDp * 0.28f).dp)),
         contentAlignment = Alignment.Center
     ) {
         Icon(

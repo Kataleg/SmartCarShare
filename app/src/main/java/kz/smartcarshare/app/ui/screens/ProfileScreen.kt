@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LockReset
@@ -57,6 +58,7 @@ fun ProfileScreen(
     onChatClick: () -> Unit,
     onB2BClick: () -> Unit,
     onMyTripsClick: () -> Unit = {},
+    onFavoritesClick: () -> Unit = {},
     onLogoutClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onSendPasswordReset: (email: String) -> Unit = {},
@@ -206,18 +208,6 @@ fun ProfileScreen(
                                     color = TextHi,
                                     fontWeight = FontWeight.ExtraBold
                                 )
-                                Surface(
-                                    color = Ice.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "PRO",
-                                        color = Ice,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Black,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
                             }
                             Text(
                                 text = displayPhone,
@@ -272,6 +262,12 @@ fun ProfileScreen(
                     )
                 }
                 MenuRow(Icons.Filled.Chat, Strings.get(lang, "ai_chat"), onClick = onChatClick)
+                MenuRow(
+                    icon = Icons.Filled.Favorite,
+                    title = if (lang == Lang.KZ) "Таңдаулы көліктер" else "Избранные авто",
+                    sub = if (lang == Lang.KZ) "Базада сақталған тізім" else "Сохраненные в облаке авто",
+                    onClick = onFavoritesClick
+                )
                 MenuRow(
                     icon = Icons.Filled.DirectionsCar,
                     title = Strings.get(lang, "my_trips"),

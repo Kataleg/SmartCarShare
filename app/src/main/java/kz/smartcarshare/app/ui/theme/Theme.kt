@@ -1,16 +1,16 @@
 package kz.smartcarshare.app.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val Scheme = darkColorScheme(
+private val Scheme = lightColorScheme(
     primary = Amber,
     onPrimary = AmberOnDark,
     primaryContainer = Surface2,
     onPrimaryContainer = TextHi,
     secondary = Ice,
-    onSecondary = Navy900,
+    onSecondary = Surface1,
     secondaryContainer = Surface3,
     onSecondaryContainer = Ice,
     background = Navy800,

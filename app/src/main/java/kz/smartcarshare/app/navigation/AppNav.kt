@@ -1,8 +1,12 @@
 package kz.smartcarshare.app.navigation
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.unit.dp
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
@@ -11,16 +15,21 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import kotlinx.coroutines.launch
 import kz.smartcarshare.app.data.Lang
 import kz.smartcarshare.app.data.RentalViewModel
 import kz.smartcarshare.app.ui.screens.*
@@ -39,25 +48,27 @@ object Routes {
     const val B2B = "b2b"
     const val PROFILE = "profile"
     const val TRIPS = "trips"
+    const val FAVORITES = "favorites"
 
     fun detail(carId: Int) = "detail/$carId"
 }
 
-private val bottomBarRoutes = setOf(Routes.HOME, Routes.CHAT, Routes.PROFILE, Routes.TRIPS, Routes.ACTIVE)
-
 @Composable
 fun SmartCarShareApp() {
+    AppNav()
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppNav() {
     val navController = rememberNavController()
     val vm: RentalViewModel = viewModel()
     val registerViewModel: RegisterViewModel = viewModel()
+
     val registerState by registerViewModel.uiState.collectAsState()
     val currentUser = registerState.currentUser
 
-    LaunchedEffect(currentUser) {
-        if (!currentUser?.email.isNullOrBlank()) {
-            vm.loadUserData(currentUser.email)
-        }
-    }
+    val bottomBarRoutes = listOf(Routes.HOME, Routes.CHAT, Routes.ACTIVE, Routes.PROFILE, Routes.TRIPS)
 
     LaunchedEffect(registerState.lang) {
         vm.setLanguage(registerState.lang)
@@ -68,18 +79,9 @@ fun SmartCarShareApp() {
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-
-    val navColors = NavigationBarItemDefaults.colors(
-        selectedIconColor = AmberOnDark,
-        selectedTextColor = Amber,
-        indicatorColor = Amber,
-        unselectedIconColor = TextLow,
-        unselectedTextColor = TextLow
-    )
 
     val startDest = remember(currentUser, vm.rentalActive) {
         if (vm.rentalActive) Routes.ACTIVE
@@ -92,59 +94,18 @@ fun SmartCarShareApp() {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (currentRoute in bottomBarRoutes) {
-                Surface(
-                    shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-                    color = Surface1.copy(alpha = 0.84f),
-                    border = BorderStroke(1.dp, BorderLight.copy(alpha = 0.35f)),
-                    shadowElevation = 16.dp
-                ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        tonalElevation = 0.dp
-                    ) {
-                        NavigationBarItem(
-                            selected = currentRoute == Routes.HOME,
-                            onClick = { navController.navigate(Routes.HOME) { launchSingleTop = true } },
-                            icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-                            label = { Text(Strings.get(vm.currentLang, "nav_home")) },
-                            colors = navColors
-                        )
-                        NavigationBarItem(
-                            selected = currentRoute == Routes.CHAT,
-                            onClick = { navController.navigate(Routes.CHAT) { launchSingleTop = true } },
-                            icon = { Icon(Icons.Filled.Chat, contentDescription = null) },
-                            label = { Text(Strings.get(vm.currentLang, "nav_chat")) },
-                            colors = navColors
-                        )
-                        NavigationBarItem(
-                            selected = currentRoute == Routes.ACTIVE || currentRoute == Routes.TRIPS,
-                            onClick = {
-                                if (vm.rentalActive) {
-                                    navController.navigate(Routes.ACTIVE) { launchSingleTop = true }
-                                } else {
-                                    navController.navigate(Routes.TRIPS) { launchSingleTop = true }
-                                }
-                            },
-                            icon = { Icon(Icons.Filled.DirectionsCar, contentDescription = null) },
-                            label = { Text(Strings.get(vm.currentLang, "nav_trips")) },
-                            colors = navColors
-                        )
-                        NavigationBarItem(
-                            selected = currentRoute == Routes.PROFILE,
-                            onClick = { navController.navigate(Routes.PROFILE) { launchSingleTop = true } },
-                            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                            label = { Text(Strings.get(vm.currentLang, "nav_profile")) },
-                            colors = navColors
-                        )
-                    }
-                }
+                FloatingGlassBottomBar(
+                    currentRoute = currentRoute,
+                    vm = vm,
+                    navController = navController
+                )
             }
         }
-    ) { innerPadding ->
+    ) { padding ->
         NavHost(
             navController = navController,
             startDestination = startDest,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(padding)
         ) {
             composable(Routes.REGISTER) {
                 RegisterScreen(
@@ -156,28 +117,35 @@ fun SmartCarShareApp() {
                     viewModel = registerViewModel
                 )
             }
+
             composable(Routes.HOME) {
                 HomeScreen(
                     vm = vm,
                     currentUser = currentUser,
                     lang = vm.currentLang,
-                    onCarClick = { id ->
-                        vm.selectCar(id)
-                        navController.navigate(Routes.detail(id))
+                    onCarClick = { carId ->
+                        vm.selectCar(carId)
+                        navController.navigate(Routes.detail(carId))
                     },
                     onB2BClick = { navController.navigate(Routes.B2B) }
                 )
             }
+
             composable(
                 route = Routes.DETAIL,
                 arguments = listOf(navArgument("carId") { type = NavType.IntType })
-            ) {
+            ) { backStack ->
+                val carId = backStack.arguments?.getInt("carId") ?: return@composable
+                LaunchedEffect(carId) {
+                    vm.selectCar(carId)
+                }
                 CarDetailScreen(
                     vm = vm,
                     onBack = { navController.popBackStack() },
                     onRentClick = { navController.navigate(Routes.BOOKING) }
                 )
             }
+
             composable(Routes.BOOKING) {
                 BookingScreen(
                     vm = vm,
@@ -185,82 +153,68 @@ fun SmartCarShareApp() {
                     onConfirm = { navController.navigate(Routes.INSPECT_BEFORE) }
                 )
             }
+
             composable(Routes.INSPECT_BEFORE) {
                 InspectionBeforeScreen(
                     lang = vm.currentLang,
                     onBack = { navController.popBackStack() },
                     onStartRental = {
-                        vm.startRental(currentUser?.email ?: "guest_user")
+                        vm.startRental()
                         navController.navigate(Routes.ACTIVE) {
-                            popUpTo(Routes.HOME)
+                            popUpTo(Routes.HOME) { inclusive = false }
                         }
                     }
                 )
             }
+
             composable(Routes.ACTIVE) {
                 ActiveRentalScreen(
                     vm = vm,
-                    onFinishTrip = {
-                        vm.stopTripAccrual()
-                        navController.navigate(Routes.INSPECT_AFTER)
-                    }
+                    onFinishTrip = { navController.navigate(Routes.INSPECT_AFTER) }
                 )
             }
+
             composable(Routes.INSPECT_AFTER) {
                 InspectionAfterScreen(
                     vm = vm,
                     onDone = {
-                        val paid = vm.liveAccruedPrice()
                         vm.finishRental()
-                        scope.launch {
-                            snackbarHostState.showSnackbar(if (vm.currentLang == Lang.KZ) "Сапар аяқталды. Сомасы: $paid ₸" else "Поездка завершена. Сумма: $paid ₸")
-                        }
                         navController.navigate(Routes.HOME) {
                             popUpTo(Routes.HOME) { inclusive = true }
                         }
                     }
                 )
             }
+
             composable(Routes.CHAT) {
                 ChatScreen(
                     cars = vm.cars,
                     currentUser = currentUser,
                     lang = vm.currentLang,
-                    onCarChosen = { id ->
-                        vm.selectCar(id)
-                        navController.navigate(Routes.detail(id))
+                    onCarChosen = { carId ->
+                        vm.selectCar(carId)
+                        navController.navigate(Routes.detail(carId))
                     }
                 )
             }
+
             composable(Routes.B2B) {
                 B2BScreen(
                     lang = vm.currentLang,
                     onBack = { navController.popBackStack() },
-                    onPlanChosen = { plan ->
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                if (vm.currentLang == Lang.KZ) "Өтінім қабылданды: «$plan» тарифі" else "Заявка принята: тариф «$plan»"
-                            )
-                        }
-                    }
+                    onPlanChosen = { navController.popBackStack() }
                 )
             }
-            composable(Routes.TRIPS) {
-                MyTripsScreen(
-                    vm = vm,
-                    lang = vm.currentLang,
-                    onBack = { navController.popBackStack() }
-                )
-            }
+
             composable(Routes.PROFILE) {
                 ProfileScreen(
                     vm = vm,
                     currentUser = currentUser,
                     lang = vm.currentLang,
-                    onToggleLang = { vm.toggleLanguage() },
-                    onChatClick = { navController.navigate(Routes.CHAT) { launchSingleTop = true } },
+                    onChatClick = { navController.navigate(Routes.CHAT) },
                     onB2BClick = { navController.navigate(Routes.B2B) },
                     onMyTripsClick = { navController.navigate(Routes.TRIPS) },
+                    onFavoritesClick = { navController.navigate(Routes.FAVORITES) },
                     onLogoutClick = {
                         registerViewModel.logout()
                         navController.navigate(Routes.REGISTER) {
@@ -274,10 +228,121 @@ fun SmartCarShareApp() {
                         registerViewModel.onEmailChange(email)
                         registerViewModel.sendPasswordReset()
                     },
-                    onUpdateProfile = { firstName, lastName, phone, email, avatarUrl ->
-                        registerViewModel.updateProfile(firstName, lastName, phone, email, avatarUrl)
+                    onUpdateProfile = { fName, lName, phone, email, avatarUrl ->
+                        registerViewModel.updateProfile(
+                            firstName = fName,
+                            lastName = lName,
+                            phone = phone,
+                            email = email,
+                            avatarUrl = avatarUrl
+                        )
                     }
                 )
+            }
+
+            composable(Routes.TRIPS) {
+                MyTripsScreen(
+                    vm = vm,
+                    currentUser = currentUser,
+                    lang = vm.currentLang,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Routes.FAVORITES) {
+                FavoritesScreen(
+                    vm = vm,
+                    currentUser = currentUser,
+                    lang = vm.currentLang,
+                    onBack = { navController.popBackStack() },
+                    onCarClick = { carId ->
+                        vm.selectCar(carId)
+                        navController.navigate(Routes.detail(carId))
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FloatingGlassBottomBar(
+    currentRoute: String?,
+    vm: RentalViewModel,
+    navController: NavHostController
+) {
+    val items = listOf(
+        Triple(Routes.HOME, Icons.Filled.Home, "nav_home"),
+        Triple(Routes.CHAT, Icons.Filled.Chat, "nav_chat"),
+        Triple(if (vm.rentalActive) Routes.ACTIVE else Routes.TRIPS, Icons.Filled.DirectionsCar, "nav_trips"),
+        Triple(Routes.PROFILE, Icons.Filled.Person, "nav_profile")
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
+                .clip(RoundedCornerShape(100.dp))
+                .background(Color.White.copy(alpha = 0.40f))
+                .border(1.2.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(100.dp))
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                items.forEach { (route, icon, labelKey) ->
+                    val isSelected = (currentRoute == route) ||
+                            (route == Routes.TRIPS && currentRoute == Routes.ACTIVE)
+
+                    val activeBg by animateColorAsState(
+                        targetValue = if (isSelected) Amber else Color.Transparent,
+                        animationSpec = tween(250),
+                        label = "activeBg"
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .clickable {
+                                navController.navigate(route) { launchSingleTop = true }
+                            }
+                            .padding(horizontal = 12.dp, vertical = 2.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(width = 44.dp, height = 26.dp)
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(activeBg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = if (isSelected) Color.White else TextMid,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            text = Strings.get(vm.currentLang, labelKey),
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) Amber else TextMid,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
         }
     }
